@@ -4,9 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:senior_ease/main.dart';
 
 void main() {
-  testWidgets('App renders SeniorEase text', (WidgetTester tester) async {
+  testWidgets('App renders demo page', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: SeniorEaseApp()));
 
-    expect(find.text('SeniorEase'), findsOneWidget);
+    expect(find.text('Demonstração de Acessibilidade'), findsOneWidget);
   });
 }
