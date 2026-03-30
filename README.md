@@ -59,3 +59,16 @@ No GitHub, vá em **Settings > Secrets and variables > Actions** e crie os segui
 | `FIREBASE_AUTH_DOMAIN` | Auth Domain |
 | `FIREBASE_STORAGE_BUCKET` | Storage Bucket |
 | `FIREBASE_MEASUREMENT_ID` | Measurement ID (web) |
+
+## Convenção de Commits
+
+| Prefixo | Uso |
+| --- | --- |
+| `feat:` | Nova funcionalidade |
+| `fix:` | Correção de bug |
+| `refactor:` | Refatoração sem mudança de comportamento |
+| `style:` | Mudanças visuais sem lógica |
+| `test:` | Adição ou correção de testes |
+| `chore:` | Tarefas de manutenção, configs |
+| `ci:` | Mudanças em CI/CD |
+| `docs:` | Documentação |
