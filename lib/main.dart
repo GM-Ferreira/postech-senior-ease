@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'config/routes/app_router.dart';
 import 'config/theme/app_theme.dart';
 import 'firebase_options.dart';
+import 'presentation/providers/animations_provider.dart';
 import 'presentation/providers/contrast_provider.dart';
 import 'presentation/providers/font_scale_provider.dart';
 import 'presentation/providers/spacing_provider.dart';
@@ -25,11 +26,13 @@ class SeniorEaseApp extends ConsumerWidget {
     final fontScale = ref.watch(fontScaleProvider);
     final contrastLevel = ref.watch(contrastLevelProvider);
     final spacingScale = ref.watch(spacingScaleProvider);
+    final reduceAnimations = ref.watch(reduceAnimationsProvider);
 
     return MediaQuery(
-      data: MediaQuery.of(
-        context,
-      ).copyWith(textScaler: TextScaler.linear(fontScale)),
+      data: MediaQuery.of(context).copyWith(
+        textScaler: TextScaler.linear(fontScale),
+        disableAnimations: reduceAnimations,
+      ),
       child: MaterialApp.router(
         title: 'SeniorEase',
         theme: buildLightTheme(
