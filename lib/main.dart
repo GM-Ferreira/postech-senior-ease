@@ -7,6 +7,7 @@ import 'config/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'presentation/providers/contrast_provider.dart';
 import 'presentation/providers/font_scale_provider.dart';
+import 'presentation/providers/spacing_provider.dart';
 import 'presentation/providers/theme_provider.dart';
 
 void main() async {
@@ -23,6 +24,7 @@ class SeniorEaseApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     final fontScale = ref.watch(fontScaleProvider);
     final contrastLevel = ref.watch(contrastLevelProvider);
+    final spacingScale = ref.watch(spacingScaleProvider);
 
     return MediaQuery(
       data: MediaQuery.of(
@@ -30,8 +32,14 @@ class SeniorEaseApp extends ConsumerWidget {
       ).copyWith(textScaler: TextScaler.linear(fontScale)),
       child: MaterialApp.router(
         title: 'SeniorEase',
-        theme: buildLightTheme(contrastLevel: contrastLevel.value),
-        darkTheme: buildDarkTheme(contrastLevel: contrastLevel.value),
+        theme: buildLightTheme(
+          contrastLevel: contrastLevel.value,
+          spacingScale: spacingScale,
+        ),
+        darkTheme: buildDarkTheme(
+          contrastLevel: contrastLevel.value,
+          spacingScale: spacingScale,
+        ),
         themeMode: themeMode,
         routerConfig: appRouter,
       ),
