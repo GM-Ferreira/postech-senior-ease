@@ -1,6 +1,6 @@
 {
-    "name": "senior_ease",
-    "short_name": "senior_ease",
+    "name": "SeniorEase",
+    "short_name": "SeniorEase",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
