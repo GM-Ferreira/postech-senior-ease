@@ -28,10 +28,20 @@ class SeniorEaseApp extends ConsumerWidget {
     final spacingScale = ref.watch(spacingScaleProvider);
     final reduceAnimations = ref.watch(reduceAnimationsProvider);
 
+    // Ler configurações de acessibilidade do SO
+    final platformData = MediaQuery.of(context);
+    final platformTextScale = platformData.textScaler.scale(1.0);
+    final platformDisableAnimations = platformData.disableAnimations;
+
+    final effectiveFontScale = fontScale == 1.0 ? platformTextScale : fontScale;
+
+    final effectiveDisableAnimations =
+        reduceAnimations || platformDisableAnimations;
+
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(
-        textScaler: TextScaler.linear(fontScale),
-        disableAnimations: reduceAnimations,
+      data: platformData.copyWith(
+        textScaler: TextScaler.linear(effectiveFontScale),
+        disableAnimations: effectiveDisableAnimations,
       ),
       child: MaterialApp.router(
         title: 'SeniorEase',
