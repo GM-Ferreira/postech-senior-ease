@@ -2,21 +2,23 @@ import 'package:flutter/material.dart';
 
 const _seedColor = Colors.deepPurple;
 
-final lightTheme = ThemeData(
+ThemeData buildLightTheme({double contrastLevel = 0.0}) => ThemeData(
   brightness: Brightness.light,
   colorScheme: ColorScheme.fromSeed(
     seedColor: _seedColor,
     brightness: Brightness.light,
+    contrastLevel: contrastLevel,
   ),
   useMaterial3: true,
   visualDensity: VisualDensity.adaptivePlatformDensity,
 );
 
-final darkTheme = ThemeData(
+ThemeData buildDarkTheme({double contrastLevel = 0.0}) => ThemeData(
   brightness: Brightness.dark,
   colorScheme: ColorScheme.fromSeed(
     seedColor: _seedColor,
     brightness: Brightness.dark,
+    contrastLevel: contrastLevel,
   ),
   useMaterial3: true,
   visualDensity: VisualDensity.adaptivePlatformDensity,
