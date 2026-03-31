@@ -20,11 +20,19 @@ class FirebaseAuthDatasource {
     return _requireUser(credential);
   }
 
-  Future<AppUser> signUpWithEmail(String email, String password) async {
+  Future<AppUser> signUpWithEmail(
+    String email,
+    String password, {
+    String? displayName,
+  }) async {
     final credential = await _auth.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );
+    if (displayName != null && credential.user != null) {
+      await credential.user!.updateDisplayName(displayName);
+      await credential.user!.reload();
+    }
     return _requireUser(credential);
   }
 
