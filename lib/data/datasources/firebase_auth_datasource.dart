@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../../core/entities/app_user.dart';
 
@@ -37,8 +38,16 @@ class FirebaseAuthDatasource {
   }
 
   Future<AppUser> signInWithGoogle() async {
-    final provider = GoogleAuthProvider();
-    final credential = await _auth.signInWithPopup(provider);
+    final provider = GoogleAuthProvider()
+      ..setCustomParameters({'prompt': 'select_account'});
+    // Web: use a popup window.
+    // Mobile: opens a Chrome Custom Tab.
+    final UserCredential credential;
+    if (kIsWeb) {
+      credential = await _auth.signInWithPopup(provider);
+    } else {
+      credential = await _auth.signInWithProvider(provider);
+    }
     return _requireUser(credential);
   }
 

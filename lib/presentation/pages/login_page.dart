@@ -18,6 +18,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
 
@@ -50,6 +51,29 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isGoogleLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      await ref.read(authRepositoryProvider).signInWithGoogle();
+      if (mounted) context.go('/');
+    } on FirebaseAuthException catch (e) {
+      if (mounted) setState(() => _errorMessage = _mapAuthError(e.code));
+    } catch (e) {
+      // Silently ignore user cancellation; surface all other errors.
+      final message = e.toString();
+      if (mounted && !message.contains('cancelado')) {
+        setState(
+          () => _errorMessage = 'Erro ao entrar com Google. Tente novamente.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
     }
   }
 
@@ -220,6 +244,55 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('Entrar'),
+                  ),
+                  SizedBox(height: spacing.md),
+
+                  // Divisor "ou"
+                  Row(
+                    children: [
+                      const Expanded(child: Divider()),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: spacing.sm),
+                        child: Text(
+                          'ou',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      const Expanded(child: Divider()),
+                    ],
+                  ),
+                  SizedBox(height: spacing.md),
+
+                  // Botão Google
+                  OutlinedButton(
+                    onPressed: (_isLoading || _isGoogleLoading)
+                        ? null
+                        : _signInWithGoogle,
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: spacing.md),
+                    ),
+                    child: _isGoogleLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'G',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: const Color(0xFF4285F4),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(width: spacing.sm),
+                              const Text('Continuar com Google'),
+                            ],
+                          ),
                   ),
                   SizedBox(height: spacing.lg),
 
