@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../../presentation/pages/demo_page.dart';
+import '../../presentation/pages/forgot_password_page.dart';
 import '../../presentation/pages/login_page.dart';
 import '../../presentation/pages/sign_up_page.dart';
 
@@ -16,6 +17,11 @@ final appRouter = GoRouter(
       path: '/cadastro',
       name: 'cadastro',
       builder: (context, state) => const SignUpPage(),
+    ),
+    GoRoute(
+      path: '/recuperar-senha',
+      name: 'recuperar-senha',
+      builder: (context, state) => const ForgotPasswordPage(),
     ),
     GoRoute(
       path: '/',
