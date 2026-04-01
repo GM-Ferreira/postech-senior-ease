@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/theme/app_spacing.dart';
 import '../providers/animations_provider.dart';
+import '../providers/auth_provider.dart';
 import '../providers/contrast_provider.dart';
 import '../providers/font_scale_provider.dart';
 import '../providers/spacing_provider.dart';
@@ -28,6 +29,15 @@ class DemoPage extends ConsumerWidget {
         title: const Text('Demonstração de Acessibilidade'),
         backgroundColor: colors.primaryContainer,
         foregroundColor: colors.onPrimaryContainer,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Sair',
+            onPressed: () async {
+              await ref.read(authRepositoryProvider).signOut();
+            },
+          ),
+        ],
       ),
       body: ListView(
         padding: EdgeInsets.all(spacing.md),

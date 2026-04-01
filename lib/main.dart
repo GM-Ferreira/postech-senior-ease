@@ -55,7 +55,7 @@ class SeniorEaseApp extends ConsumerWidget {
           spacingScale: spacingScale,
         ),
         themeMode: themeMode,
-        routerConfig: appRouter,
+        routerConfig: ref.watch(appRouterProvider),
       ),
     );
   }
