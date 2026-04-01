@@ -12,7 +12,20 @@
           "package_name": "com.seniorease.senior_ease"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "{{GOOGLE_ANDROID_CLIENT_ID}}",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.seniorease.senior_ease",
+            "certificate_hash": "{{ANDROID_CERT_HASH}}"
+          }
+        },
+        {
+          "client_id": "{{GOOGLE_WEB_CLIENT_ID}}",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "{{FIREBASE_ANDROID_API_KEY}}"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "{{GOOGLE_WEB_CLIENT_ID}}",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

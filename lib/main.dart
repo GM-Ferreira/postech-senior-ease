@@ -45,6 +45,7 @@ class SeniorEaseApp extends ConsumerWidget {
       ),
       child: MaterialApp.router(
         title: 'SeniorEase',
+        debugShowCheckedModeBanner: false,
         theme: buildLightTheme(
           contrastLevel: contrastLevel.value,
           spacingScale: spacingScale,
@@ -54,7 +55,7 @@ class SeniorEaseApp extends ConsumerWidget {
           spacingScale: spacingScale,
         ),
         themeMode: themeMode,
-        routerConfig: appRouter,
+        routerConfig: ref.watch(appRouterProvider),
       ),
     );
   }

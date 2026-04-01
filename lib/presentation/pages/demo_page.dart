@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../config/theme/app_spacing.dart';
 import '../providers/animations_provider.dart';
@@ -28,6 +29,13 @@ class DemoPage extends ConsumerWidget {
         title: const Text('Demonstração de Acessibilidade'),
         backgroundColor: colors.primaryContainer,
         foregroundColor: colors.onPrimaryContainer,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outlined),
+            tooltip: 'Meu perfil',
+            onPressed: () => context.push('/perfil'),
+          ),
+        ],
       ),
       body: ListView(
         padding: EdgeInsets.all(spacing.md),

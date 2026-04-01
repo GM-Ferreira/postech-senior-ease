@@ -59,6 +59,9 @@ No GitHub, vá em **Settings > Secrets and variables > Actions** e crie os segui
 | `FIREBASE_AUTH_DOMAIN` | Auth Domain |
 | `FIREBASE_STORAGE_BUCKET` | Storage Bucket |
 | `FIREBASE_MEASUREMENT_ID` | Measurement ID (web) |
+| `GOOGLE_ANDROID_CLIENT_ID` | OAuth client_id do Android (client_type 1) |
+| `GOOGLE_WEB_CLIENT_ID` | OAuth client_id Web (client_type 3) |
+| `ANDROID_CERT_HASH` | SHA-1 do keystore de debug Android |
 
 ## Convenção de Commits
 

@@ -37,6 +37,9 @@ jobs:
               -e "s|{{FIREBASE_STORAGE_BUCKET}}|${{ secrets.FIREBASE_STORAGE_BUCKET }}|g" \
               -e "s|{{FIREBASE_ANDROID_APP_ID}}|${{ secrets.FIREBASE_ANDROID_APP_ID }}|g" \
               -e "s|{{FIREBASE_ANDROID_API_KEY}}|${{ secrets.FIREBASE_ANDROID_API_KEY }}|g" \
+              -e "s|{{GOOGLE_ANDROID_CLIENT_ID}}|${{ secrets.GOOGLE_ANDROID_CLIENT_ID }}|g" \
+              -e "s|{{GOOGLE_WEB_CLIENT_ID}}|${{ secrets.GOOGLE_WEB_CLIENT_ID }}|g" \
+              -e "s|{{ANDROID_CERT_HASH}}|${{ secrets.ANDROID_CERT_HASH }}|g" \
               android/app/google-services-template.json > android/app/google-services.json
 
       - name: Install dependencies
