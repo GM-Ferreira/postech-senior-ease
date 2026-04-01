@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/theme/app_spacing.dart';
+import '../../core/repositories/auth_repository.dart';
 import '../providers/auth_provider.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -97,6 +98,21 @@ class ProfilePage extends ConsumerWidget {
                     ),
                     SizedBox(height: spacing.xxl),
 
+                    // Editar nome
+                    FilledButton.icon(
+                      onPressed: () => _showEditNameDialog(
+                        context,
+                        ref,
+                        currentName: user.displayName ?? '',
+                      ),
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Editar nome'),
+                      style: FilledButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: spacing.md),
+                      ),
+                    ),
+                    SizedBox(height: spacing.sm),
+
                     // Logout
                     OutlinedButton.icon(
                       onPressed: () async {
@@ -124,6 +140,163 @@ class ProfilePage extends ConsumerWidget {
     return '${date.day.toString().padLeft(2, '0')}/'
         '${date.month.toString().padLeft(2, '0')}/'
         '${date.year}';
+  }
+
+  Future<void> _showEditNameDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    required String currentName,
+  }) async {
+    final authRepo = ref.read(authRepositoryProvider);
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (_) =>
+          _EditNameDialog(currentName: currentName, authRepo: authRepo),
+    );
+
+    // Feedback de sucesso após fechar o dialog de edição.
+    if ((saved ?? false) && context.mounted) {
+      final colors = Theme.of(context).colorScheme;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Icon(Icons.check_circle, color: colors.primary, size: 72),
+              const SizedBox(height: 20),
+              Text(
+                'Nome atualizado\ncom sucesso!',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colors.onSurface,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: FilledButton.styleFrom(minimumSize: const Size(120, 48)),
+              child: const Text('OK', style: TextStyle(fontSize: 18)),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+}
+
+/// Dialog de edição de nome como StatefulWidget para que o
+/// TextEditingController seja descartado pelo ciclo de vida do Flutter
+/// (após a animação de fechamento completar), evitando use-after-dispose.
+class _EditNameDialog extends StatefulWidget {
+  const _EditNameDialog({required this.currentName, required this.authRepo});
+
+  final String currentName;
+  final AuthRepository authRepo;
+
+  @override
+  State<_EditNameDialog> createState() => _EditNameDialogState();
+}
+
+class _EditNameDialogState extends State<_EditNameDialog> {
+  late final TextEditingController _controller;
+  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.currentName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Editar nome'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _controller,
+              autofocus: true,
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(
+                labelText: 'Nome',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person_outlined),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Informe um nome';
+                }
+                return null;
+              },
+            ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _errorMessage!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context, false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _isLoading ? null : _save,
+          child: _isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Salvar'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      await widget.authRepo.updateDisplayName(_controller.text.trim());
+      if (mounted) Navigator.pop(context, true);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Erro ao salvar. Tente novamente.';
+        });
+      }
+    }
   }
 }
 

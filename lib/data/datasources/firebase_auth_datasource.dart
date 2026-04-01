@@ -8,8 +8,7 @@ class FirebaseAuthDatasource {
 
   final FirebaseAuth _auth;
 
-  Stream<AppUser?> get authStateChanges =>
-      _auth.authStateChanges().map(_mapUser);
+  Stream<AppUser?> get authStateChanges => _auth.userChanges().map(_mapUser);
 
   AppUser? get currentUser => _mapUser(_auth.currentUser);
 
@@ -53,6 +52,13 @@ class FirebaseAuthDatasource {
 
   Future<void> sendPasswordReset(String email) =>
       _auth.sendPasswordResetEmail(email: email);
+
+  Future<void> updateDisplayName(String displayName) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Usuário não autenticado');
+    await user.updateDisplayName(displayName);
+    await user.reload();
+  }
 
   Future<void> signOut() => _auth.signOut();
 

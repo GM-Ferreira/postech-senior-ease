@@ -19,10 +19,18 @@ const _publicRoutes = {'/login', '/cadastro', '/recuperar-senha', '/splash'};
 /// sempre lê um valor cacheado — sem depender de assinaturas raw ao Firebase.
 class RouterNotifier extends ChangeNotifier {
   RouterNotifier(this._ref) {
-    _ref.listen<AsyncValue<AppUser?>>(
-      authStateProvider,
-      (_, _) => notifyListeners(),
-    );
+    _ref.listen<AsyncValue<AppUser?>>(authStateProvider, (prev, next) {
+      // Notifica o GoRouter apenas quando o status de autenticação muda
+      // (null ↔ usuário) ou quando o loading muda.
+      // Mudanças de perfil (displayName, photo) não devem acionar redirect.
+      final prevIsLoading = prev?.isLoading ?? true;
+      final prevAuthed = prev?.asData?.value != null;
+      final nextAuthed = next.asData?.value != null;
+
+      if (prevIsLoading != next.isLoading || prevAuthed != nextAuthed) {
+        notifyListeners();
+      }
+    });
   }
 
   final Ref _ref;
