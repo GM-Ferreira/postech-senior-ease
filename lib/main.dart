@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'config/routes/app_router.dart';
 import 'config/theme/app_theme.dart';
+import 'core/entities/user_preferences.dart';
 import 'firebase_options.dart';
 import 'presentation/providers/animations_provider.dart';
 import 'presentation/providers/contrast_provider.dart';
 import 'presentation/providers/font_scale_provider.dart';
 import 'presentation/providers/spacing_provider.dart';
 import 'presentation/providers/theme_provider.dart';
+import 'presentation/providers/user_preferences_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,11 +19,37 @@ void main() async {
   runApp(const ProviderScope(child: SeniorEaseApp()));
 }
 
+/// Converte [PreferencesContrastLevel] (domínio) para [ContrastLevel] (UI).
+ContrastLevel _toContrastLevel(PreferencesContrastLevel level) =>
+    switch (level) {
+      PreferencesContrastLevel.high => ContrastLevel.high,
+      PreferencesContrastLevel.veryHigh => ContrastLevel.veryHigh,
+      PreferencesContrastLevel.normal => ContrastLevel.normal,
+    };
+
 class SeniorEaseApp extends ConsumerWidget {
   const SeniorEaseApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Quando as preferências do Firestore carregam (ou o usuário troca),
+    // alimentamos os providers de UI com os valores persistidos.
+    ref.listen<AsyncValue<UserPreferences>>(userPreferencesProvider, (_, next) {
+      next.whenData((prefs) {
+        ref.read(fontScaleProvider.notifier).setScale(prefs.fontScale);
+        ref.read(spacingScaleProvider.notifier).setScale(prefs.spacingScale);
+        ref
+            .read(themeModeProvider.notifier)
+            .setThemeMode(prefs.themeMode.toThemeMode());
+        ref
+            .read(reduceAnimationsProvider.notifier)
+            .set(reduce: prefs.reduceAnimations);
+        ref
+            .read(contrastLevelProvider.notifier)
+            .setLevel(_toContrastLevel(prefs.contrastLevel));
+      });
+    });
+
     final themeMode = ref.watch(themeModeProvider);
     final fontScale = ref.watch(fontScaleProvider);
     final contrastLevel = ref.watch(contrastLevelProvider);
