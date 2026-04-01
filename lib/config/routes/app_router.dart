@@ -6,6 +6,7 @@ import '../../core/entities/app_user.dart';
 import '../../presentation/pages/demo_page.dart';
 import '../../presentation/pages/forgot_password_page.dart';
 import '../../presentation/pages/login_page.dart';
+import '../../presentation/pages/profile_page.dart';
 import '../../presentation/pages/sign_up_page.dart';
 import '../../presentation/pages/splash_page.dart';
 import '../../presentation/providers/auth_provider.dart';
@@ -88,6 +89,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/',
         name: 'home',
         builder: (context, state) => const DemoPage(),
+      ),
+      GoRoute(
+        path: '/perfil',
+        name: 'perfil',
+        builder: (context, state) => const ProfilePage(),
       ),
     ],
   );

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../config/theme/app_spacing.dart';
 import '../providers/animations_provider.dart';
-import '../providers/auth_provider.dart';
 import '../providers/contrast_provider.dart';
 import '../providers/font_scale_provider.dart';
 import '../providers/spacing_provider.dart';
@@ -31,11 +31,9 @@ class DemoPage extends ConsumerWidget {
         foregroundColor: colors.onPrimaryContainer,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Sair',
-            onPressed: () async {
-              await ref.read(authRepositoryProvider).signOut();
-            },
+            icon: const Icon(Icons.person_outlined),
+            tooltip: 'Meu perfil',
+            onPressed: () => context.push('/perfil'),
           ),
         ],
       ),
