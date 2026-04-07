@@ -24,7 +24,12 @@ class ProfilePage extends ConsumerWidget {
         foregroundColor: colors.onPrimaryContainer,
       ),
       body: authState.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(
+          child: Semantics(
+            label: 'Carregando dados do perfil',
+            child: const CircularProgressIndicator(),
+          ),
+        ),
         error: (_, _) => Center(
           child: Text(
             'Erro ao carregar perfil.',
@@ -45,8 +50,10 @@ class ProfilePage extends ConsumerWidget {
                     SizedBox(height: spacing.lg),
 
                     // Avatar
-                    Center(
-                      child: _Avatar(photoUrl: user.photoUrl, colors: colors),
+                    ExcludeSemantics(
+                      child: Center(
+                        child: _Avatar(photoUrl: user.photoUrl, colors: colors),
+                      ),
                     ),
                     SizedBox(height: spacing.lg),
 
@@ -171,7 +178,13 @@ class ProfilePage extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: 8),
-                Icon(Icons.check_circle, color: colors.primary, size: 72),
+                ExcludeSemantics(
+                  child: Icon(
+                    Icons.check_circle,
+                    color: colors.primary,
+                    size: 72,
+                  ),
+                ),
                 const SizedBox(height: 20),
                 Text(
                   'Nome atualizado\ncom sucesso!',
@@ -363,7 +376,7 @@ class _InfoTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: colors.primary, size: 22),
+          ExcludeSemantics(child: Icon(icon, color: colors.primary, size: 22)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

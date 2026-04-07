@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/theme/app_spacing.dart';
@@ -69,7 +70,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               content: const Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.check_circle, color: Colors.green, size: 72),
+                  ExcludeSemantics(
+                    child: Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 72,
+                    ),
+                  ),
                   SizedBox(height: 16),
                   Text(
                     'Preferências salvas com sucesso!',
@@ -157,6 +164,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             defaults.copyWith(onboardingCompleted: current.onboardingCompleted),
           );
       if (mounted) {
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          'Preferências restauradas para os padrões',
+          TextDirection.ltr,
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Preferências restauradas!'),
@@ -459,7 +471,9 @@ class _SettingsCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
             child: Row(
               children: [
-                Icon(icon, color: theme.colorScheme.primary, size: 22),
+                ExcludeSemantics(
+                  child: Icon(icon, color: theme.colorScheme.primary, size: 22),
+                ),
                 const SizedBox(width: 12),
                 Text(
                   title,
@@ -731,26 +745,31 @@ class _ActionChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.4),
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: theme.colorScheme.primary),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.primary,
-            ),
+    return SizedBox(
+      height: 48,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: theme.colorScheme.outline.withValues(alpha: 0.4),
           ),
-        ],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ExcludeSemantics(
+              child: Icon(icon, size: 14, color: theme.colorScheme.primary),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -106,13 +107,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(spacing.md),
-                      child: Image.asset(
-                        'assets/icon/app_icon.jpg',
-                        height: 96,
-                        width: 96,
+                  ExcludeSemantics(
+                    child: Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(spacing.md),
+                        child: Image.asset(
+                          'assets/icon/app_icon.jpg',
+                          height: 96,
+                          width: 96,
+                        ),
                       ),
                     ),
                   ),
@@ -171,6 +174,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       prefixIcon: const Icon(Icons.lock_outlined),
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
+                        tooltip: _obscurePassword
+                            ? 'Mostrar senha'
+                            : 'Ocultar senha',
                         icon: Icon(
                           _obscurePassword
                               ? Icons.visibility_outlined
@@ -178,6 +184,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         ),
                         onPressed: () {
                           setState(() => _obscurePassword = !_obscurePassword);
+                          SemanticsService.sendAnnouncement(
+                            View.of(context),
+                            _obscurePassword ? 'Senha oculta' : 'Senha visível',
+                            TextDirection.ltr,
+                          );
                         },
                       ),
                     ),
@@ -212,16 +223,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.error_outline,
-                            color: colors.onErrorContainer,
+                          ExcludeSemantics(
+                            child: Icon(
+                              Icons.error_outline,
+                              color: colors.onErrorContainer,
+                            ),
                           ),
                           SizedBox(width: spacing.sm),
                           Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colors.onErrorContainer,
+                            child: Semantics(
+                              liveRegion: true,
+                              child: Text(
+                                _errorMessage!,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colors.onErrorContainer,
+                                ),
                               ),
                             ),
                           ),

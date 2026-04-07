@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/entities/user_preferences.dart';
@@ -43,6 +44,19 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     ref.read(contrastLevelProvider.notifier).setLevel(uiLevel);
   }
 
+  void _announceStep(int step) {
+    final label = switch (step) {
+      0 => 'Etapa 1 de 3: Tamanho do texto',
+      1 => 'Etapa 2 de 3: Aparência',
+      _ => 'Etapa 3 de 3: Confirmação',
+    };
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      label,
+      TextDirection.ltr,
+    );
+  }
+
   Future<void> _finish() async {
     setState(() => _saving = true);
     final current =
@@ -69,7 +83,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         child: Column(
           children: [
             const SizedBox(height: 24),
-            _StepIndicator(current: _step, total: 3),
+            ExcludeSemantics(child: _StepIndicator(current: _step, total: 3)),
             const SizedBox(height: 8),
             Expanded(
               child: AnimatedSwitcher(
@@ -101,10 +115,16 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
             _BottomNav(
               step: _step,
               saving: _saving,
-              onBack: _step > 0 ? () => setState(() => _step--) : null,
+              onBack: _step > 0
+                  ? () {
+                      setState(() => _step--);
+                      _announceStep(_step);
+                    }
+                  : null,
               onNext: () {
                 if (_step < 2) {
                   setState(() => _step++);
+                  _announceStep(_step);
                 } else {
                   _finish();
                 }
@@ -404,32 +424,37 @@ class _ThemeCard extends StatelessWidget {
     final color = selected
         ? theme.colorScheme.primary
         : theme.colorScheme.outline;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          border: Border.all(color: color, width: selected ? 2 : 1),
-          borderRadius: BorderRadius.circular(12),
-          color: selected
-              ? theme.colorScheme.primary.withValues(alpha: 0.08)
-              : Colors.transparent,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: color,
-                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Tema: $label',
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: BoxDecoration(
+            border: Border.all(color: color, width: selected ? 2 : 1),
+            borderRadius: BorderRadius.circular(12),
+            color: selected
+                ? theme.colorScheme.primary.withValues(alpha: 0.08)
+                : Colors.transparent,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ExcludeSemantics(child: Icon(icon, color: color, size: 28)),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: color,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -638,25 +663,29 @@ class _OptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        decoration: BoxDecoration(
-          border: Border.all(
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: selected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outline.withValues(alpha: 0.5),
+              width: selected ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(12),
             color: selected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outline.withValues(alpha: 0.5),
-            width: selected ? 2 : 1,
+                ? theme.colorScheme.primary.withValues(alpha: 0.08)
+                : Colors.transparent,
           ),
-          borderRadius: BorderRadius.circular(12),
-          color: selected
-              ? theme.colorScheme.primary.withValues(alpha: 0.08)
-              : Colors.transparent,
+          child: child,
         ),
-        child: child,
       ),
     );
   }

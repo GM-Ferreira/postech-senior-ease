@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -38,7 +39,14 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
       await ref
           .read(authRepositoryProvider)
           .sendPasswordReset(_emailController.text.trim());
-      if (mounted) setState(() => _emailSent = true);
+      if (mounted) {
+        setState(() => _emailSent = true);
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          'Email de recuperação enviado para ${_emailController.text.trim()}',
+          TextDirection.ltr,
+        );
+      }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         setState(() => _errorMessage = _mapAuthError(e.code));
@@ -126,7 +134,9 @@ class _FormView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(Icons.lock_reset, size: 64, color: colors.primary),
+          ExcludeSemantics(
+            child: Icon(Icons.lock_reset, size: 64, color: colors.primary),
+          ),
           SizedBox(height: spacing.md),
           Text(
             'Esqueceu a senha?',
@@ -180,13 +190,21 @@ class _FormView extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.error_outline, color: colors.onErrorContainer),
+                  ExcludeSemantics(
+                    child: Icon(
+                      Icons.error_outline,
+                      color: colors.onErrorContainer,
+                    ),
+                  ),
                   SizedBox(width: spacing.sm),
                   Expanded(
-                    child: Text(
-                      errorMessage!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colors.onErrorContainer,
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        errorMessage!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colors.onErrorContainer,
+                        ),
                       ),
                     ),
                   ),
@@ -235,7 +253,13 @@ class _SuccessView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Icon(Icons.mark_email_read_outlined, size: 64, color: colors.primary),
+        ExcludeSemantics(
+          child: Icon(
+            Icons.mark_email_read_outlined,
+            size: 64,
+            color: colors.primary,
+          ),
+        ),
         SizedBox(height: spacing.md),
         Text(
           'Email enviado!',

@@ -37,10 +37,12 @@ class HomePage extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.task_alt,
-                size: 80,
-                color: theme.colorScheme.primary.withValues(alpha: 0.4),
+              ExcludeSemantics(
+                child: Icon(
+                  Icons.task_alt,
+                  size: 80,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                ),
               ),
               const SizedBox(height: 24),
               Text(
