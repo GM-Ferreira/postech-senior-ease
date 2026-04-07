@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -90,13 +91,15 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(spacing.md),
-                      child: Image.asset(
-                        'assets/icon/app_icon.jpg',
-                        height: 80,
-                        width: 80,
+                  ExcludeSemantics(
+                    child: Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(spacing.md),
+                        child: Image.asset(
+                          'assets/icon/app_icon.jpg',
+                          height: 80,
+                          width: 80,
+                        ),
                       ),
                     ),
                   ),
@@ -166,6 +169,9 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                       prefixIcon: const Icon(Icons.lock_outlined),
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
+                        tooltip: _obscurePassword
+                            ? 'Mostrar senha'
+                            : 'Ocultar senha',
                         icon: Icon(
                           _obscurePassword
                               ? Icons.visibility_outlined
@@ -173,6 +179,11 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                         ),
                         onPressed: () {
                           setState(() => _obscurePassword = !_obscurePassword);
+                          SemanticsService.sendAnnouncement(
+                            View.of(context),
+                            _obscurePassword ? 'Senha oculta' : 'Senha visível',
+                            TextDirection.ltr,
+                          );
                         },
                       ),
                     ),
@@ -199,6 +210,9 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                       prefixIcon: const Icon(Icons.lock_outlined),
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
+                        tooltip: _obscureConfirm
+                            ? 'Mostrar senha'
+                            : 'Ocultar senha',
                         icon: Icon(
                           _obscureConfirm
                               ? Icons.visibility_outlined
@@ -206,6 +220,11 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                         ),
                         onPressed: () {
                           setState(() => _obscureConfirm = !_obscureConfirm);
+                          SemanticsService.sendAnnouncement(
+                            View.of(context),
+                            _obscureConfirm ? 'Senha oculta' : 'Senha visível',
+                            TextDirection.ltr,
+                          );
                         },
                       ),
                     ),
@@ -232,16 +251,21 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.error_outline,
-                            color: colors.onErrorContainer,
+                          ExcludeSemantics(
+                            child: Icon(
+                              Icons.error_outline,
+                              color: colors.onErrorContainer,
+                            ),
                           ),
                           SizedBox(width: spacing.sm),
                           Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colors.onErrorContainer,
+                            child: Semantics(
+                              liveRegion: true,
+                              child: Text(
+                                _errorMessage!,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colors.onErrorContainer,
+                                ),
                               ),
                             ),
                           ),

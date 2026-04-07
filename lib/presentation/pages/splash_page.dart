@@ -13,12 +13,14 @@ class SplashPage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Image.asset(
-                'assets/icon/app_icon.jpg',
-                width: 96,
-                height: 96,
+            ExcludeSemantics(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Image.asset(
+                  'assets/icon/app_icon.jpg',
+                  width: 96,
+                  height: 96,
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -30,7 +32,10 @@ class SplashPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            CircularProgressIndicator(color: colorScheme.primary),
+            Semantics(
+              label: 'Carregando aplicativo',
+              child: CircularProgressIndicator(color: colorScheme.primary),
+            ),
           ],
         ),
       ),

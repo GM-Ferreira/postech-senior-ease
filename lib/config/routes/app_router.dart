@@ -3,13 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/entities/app_user.dart';
-import '../../presentation/pages/demo_page.dart';
+import '../../core/entities/user_preferences.dart';
 import '../../presentation/pages/forgot_password_page.dart';
+import '../../presentation/pages/home_page.dart';
 import '../../presentation/pages/login_page.dart';
+import '../../presentation/pages/onboarding_page.dart';
 import '../../presentation/pages/profile_page.dart';
+import '../../presentation/pages/settings_page.dart';
 import '../../presentation/pages/sign_up_page.dart';
 import '../../presentation/pages/splash_page.dart';
 import '../../presentation/providers/auth_provider.dart';
+import '../../presentation/providers/user_preferences_provider.dart';
 
 /// Rotas públicas — acessíveis sem autenticação.
 const _publicRoutes = {'/login', '/cadastro', '/recuperar-senha', '/splash'};
@@ -31,12 +35,39 @@ class RouterNotifier extends ChangeNotifier {
         notifyListeners();
       }
     });
+
+    _ref.listen<AsyncValue<UserPreferences>>(userPreferencesProvider, (
+      prev,
+      next,
+    ) {
+      // Notifica quando as preferências terminam de carregar ou quando
+      // onboardingCompleted muda (ex: ao salvar no onboarding).
+      final prevLoading = prev?.isLoading ?? true;
+      final prevOnboarding = prev?.asData?.value.onboardingCompleted;
+      final nextOnboarding = next.asData?.value.onboardingCompleted;
+
+      if (prevLoading != next.isLoading || prevOnboarding != nextOnboarding) {
+        notifyListeners();
+      }
+    });
   }
 
   final Ref _ref;
 
-  bool get isLoading => _ref.read(authStateProvider).isLoading;
+  /// Loading enquanto auth OU (autenticado E preferências) ainda carregam.
+  bool get isLoading {
+    if (_ref.read(authStateProvider).isLoading) return true;
+    if (_ref.read(authStateProvider).asData?.value != null) {
+      return _ref.read(userPreferencesProvider).isLoading;
+    }
+    return false;
+  }
+
   AppUser? get user => _ref.read(authStateProvider).asData?.value;
+
+  bool get onboardingCompleted =>
+      _ref.read(userPreferencesProvider).asData?.value.onboardingCompleted ??
+      false;
 }
 
 final _routerNotifierProvider = Provider<RouterNotifier>((ref) {
@@ -65,11 +96,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // Após o loading, sempre sai da splash independente do estado de auth.
       if (location == '/splash') {
-        return isAuthenticated ? '/' : '/login';
+        if (!isAuthenticated) return '/login';
+        return notifier.onboardingCompleted ? '/' : '/onboarding';
       }
 
-      if (isAuthenticated && isPublic) return '/';
       if (!isAuthenticated && !isPublic) return '/login';
+      if (isAuthenticated && isPublic) {
+        return notifier.onboardingCompleted ? '/' : '/onboarding';
+      }
+
+      if (isAuthenticated) {
+        // Usuário ainda não fez onboarding → força para /onboarding
+        if (!notifier.onboardingCompleted && location != '/onboarding') {
+          return '/onboarding';
+        }
+        // Usuário já fez onboarding mas voltou para /onboarding → home
+        if (notifier.onboardingCompleted && location == '/onboarding') {
+          return '/';
+        }
+      }
+
       return null;
     },
     routes: [
@@ -94,9 +140,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ForgotPasswordPage(),
       ),
       GoRoute(
+        path: '/onboarding',
+        name: 'onboarding',
+        builder: (context, state) => const OnboardingPage(),
+      ),
+      GoRoute(
         path: '/',
         name: 'home',
-        builder: (context, state) => const DemoPage(),
+        builder: (context, state) => const HomePage(),
+      ),
+      GoRoute(
+        path: '/configuracoes',
+        name: 'configuracoes',
+        builder: (context, state) => const SettingsPage(),
       ),
       GoRoute(
         path: '/perfil',

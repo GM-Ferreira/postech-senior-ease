@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/theme/app_spacing.dart';
 import '../../core/repositories/auth_repository.dart';
 import '../providers/auth_provider.dart';
+import '../providers/enhanced_feedback_provider.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -23,7 +24,12 @@ class ProfilePage extends ConsumerWidget {
         foregroundColor: colors.onPrimaryContainer,
       ),
       body: authState.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(
+          child: Semantics(
+            label: 'Carregando dados do perfil',
+            child: const CircularProgressIndicator(),
+          ),
+        ),
         error: (_, _) => Center(
           child: Text(
             'Erro ao carregar perfil.',
@@ -44,8 +50,10 @@ class ProfilePage extends ConsumerWidget {
                     SizedBox(height: spacing.lg),
 
                     // Avatar
-                    Center(
-                      child: _Avatar(photoUrl: user.photoUrl, colors: colors),
+                    ExcludeSemantics(
+                      child: Center(
+                        child: _Avatar(photoUrl: user.photoUrl, colors: colors),
+                      ),
                     ),
                     SizedBox(height: spacing.lg),
 
@@ -155,39 +163,58 @@ class ProfilePage extends ConsumerWidget {
           _EditNameDialog(currentName: currentName, authRepo: authRepo),
     );
 
+    // Aguarda o GoRouter processar a mudança de auth state antes de abrir
+    // um novo dialog, evitando que o navigator fique em estado bloqueado.
+    await Future.delayed(Duration.zero);
+
     // Feedback de sucesso após fechar o dialog de edição.
     if ((saved ?? false) && context.mounted) {
-      final colors = Theme.of(context).colorScheme;
-      await showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Icon(Icons.check_circle, color: colors.primary, size: 72),
-              const SizedBox(height: 20),
-              Text(
-                'Nome atualizado\ncom sucesso!',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colors.onSurface,
+      if (ref.read(enhancedFeedbackProvider)) {
+        final colors = Theme.of(context).colorScheme;
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                ExcludeSemantics(
+                  child: Icon(
+                    Icons.check_circle,
+                    color: colors.primary,
+                    size: 72,
+                  ),
                 ),
-                textAlign: TextAlign.center,
+                const SizedBox(height: 20),
+                Text(
+                  'Nome atualizado\ncom sucesso!',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colors.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: FilledButton.styleFrom(minimumSize: const Size(120, 48)),
+                child: const Text('OK', style: TextStyle(fontSize: 18)),
               ),
-              const SizedBox(height: 8),
             ],
           ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: FilledButton.styleFrom(minimumSize: const Size(120, 48)),
-              child: const Text('OK', style: TextStyle(fontSize: 18)),
-            ),
-          ],
-        ),
-      );
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nome atualizado com sucesso!'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 }
@@ -349,7 +376,7 @@ class _InfoTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: colors.primary, size: 22),
+          ExcludeSemantics(child: Icon(icon, color: colors.primary, size: 22)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
