@@ -4,11 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/entities/app_user.dart';
 import '../../core/entities/user_preferences.dart';
-import '../../presentation/pages/demo_page.dart';
 import '../../presentation/pages/forgot_password_page.dart';
+import '../../presentation/pages/home_page.dart';
 import '../../presentation/pages/login_page.dart';
 import '../../presentation/pages/onboarding_page.dart';
 import '../../presentation/pages/profile_page.dart';
+import '../../presentation/pages/settings_page.dart';
 import '../../presentation/pages/sign_up_page.dart';
 import '../../presentation/pages/splash_page.dart';
 import '../../presentation/providers/auth_provider.dart';
@@ -146,7 +147,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         name: 'home',
-        builder: (context, state) => const DemoPage(),
+        builder: (context, state) => const HomePage(),
+      ),
+      GoRoute(
+        path: '/configuracoes',
+        name: 'configuracoes',
+        builder: (context, state) => const SettingsPage(),
       ),
       GoRoute(
         path: '/perfil',
