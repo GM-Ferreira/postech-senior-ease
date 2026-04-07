@@ -27,14 +27,17 @@ final userPreferencesRepositoryProvider = Provider<UserPreferencesRepository>(
 class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
   @override
   Future<UserPreferences> build() async {
-    // Reage a mudanças no estado de autenticação:
-    // quando o usuário loga/desloga, recarrega as preferências.
-    final user = await ref.watch(authStateProvider.future);
+    // Usa selectAsync para reagir APENAS ao UID, não ao user object inteiro.
+    // Assim, mudanças de perfil (displayName, photoUrl) não invalidam as
+    // preferências nem disparam recarregamento desnecessário do Firestore.
+    final uid = await ref.watch(
+      authStateProvider.selectAsync((user) => user?.uid),
+    );
 
-    if (user == null) return UserPreferences.defaults();
+    if (uid == null) return UserPreferences.defaults();
 
     final repo = ref.read(userPreferencesRepositoryProvider);
-    return repo.load(user.uid);
+    return repo.load(uid);
   }
 
   /// Persiste [preferences] no Firestore e atualiza o estado local.

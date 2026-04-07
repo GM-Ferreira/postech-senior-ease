@@ -53,6 +53,9 @@ class UserPreferences {
     required this.reduceAnimations,
     required this.themeMode,
     required this.onboardingCompleted,
+    required this.basicMode,
+    required this.enhancedFeedback,
+    required this.confirmCriticalActions,
   });
 
   /// Preferências padrão com foco em acessibilidade para idosos:
@@ -64,6 +67,9 @@ class UserPreferences {
     reduceAnimations: false,
     themeMode: PreferencesThemeMode.system,
     onboardingCompleted: false,
+    basicMode: false,
+    enhancedFeedback: false,
+    confirmCriticalActions: false,
   );
 
   /// Reconstrói a entidade a partir de um Map (Firestore).
@@ -79,6 +85,9 @@ class UserPreferences {
       map['themeMode'] as String? ?? '',
     ),
     onboardingCompleted: map['onboardingCompleted'] as bool? ?? false,
+    basicMode: map['basicMode'] as bool? ?? false,
+    enhancedFeedback: map['enhancedFeedback'] as bool? ?? false,
+    confirmCriticalActions: map['confirmCriticalActions'] as bool? ?? false,
   );
 
   final double fontScale;
@@ -87,6 +96,9 @@ class UserPreferences {
   final bool reduceAnimations;
   final PreferencesThemeMode themeMode;
   final bool onboardingCompleted;
+  final bool basicMode;
+  final bool enhancedFeedback;
+  final bool confirmCriticalActions;
 
   /// Converte para Map para persistir no Firestore.
   Map<String, dynamic> toMap() => {
@@ -96,6 +108,9 @@ class UserPreferences {
     'reduceAnimations': reduceAnimations,
     'themeMode': themeMode.toSerializable(),
     'onboardingCompleted': onboardingCompleted,
+    'basicMode': basicMode,
+    'enhancedFeedback': enhancedFeedback,
+    'confirmCriticalActions': confirmCriticalActions,
   };
 
   UserPreferences copyWith({
@@ -105,6 +120,9 @@ class UserPreferences {
     bool? reduceAnimations,
     PreferencesThemeMode? themeMode,
     bool? onboardingCompleted,
+    bool? basicMode,
+    bool? enhancedFeedback,
+    bool? confirmCriticalActions,
   }) => UserPreferences(
     fontScale: fontScale ?? this.fontScale,
     contrastLevel: contrastLevel ?? this.contrastLevel,
@@ -112,5 +130,9 @@ class UserPreferences {
     reduceAnimations: reduceAnimations ?? this.reduceAnimations,
     themeMode: themeMode ?? this.themeMode,
     onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
+    basicMode: basicMode ?? this.basicMode,
+    enhancedFeedback: enhancedFeedback ?? this.enhancedFeedback,
+    confirmCriticalActions:
+        confirmCriticalActions ?? this.confirmCriticalActions,
   );
 }

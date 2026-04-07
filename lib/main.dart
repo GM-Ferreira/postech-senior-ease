@@ -7,7 +7,10 @@ import 'config/theme/app_theme.dart';
 import 'core/entities/user_preferences.dart';
 import 'firebase_options.dart';
 import 'presentation/providers/animations_provider.dart';
+import 'presentation/providers/basic_mode_provider.dart';
+import 'presentation/providers/confirm_actions_provider.dart';
 import 'presentation/providers/contrast_provider.dart';
+import 'presentation/providers/enhanced_feedback_provider.dart';
 import 'presentation/providers/font_scale_provider.dart';
 import 'presentation/providers/spacing_provider.dart';
 import 'presentation/providers/theme_provider.dart';
@@ -47,6 +50,13 @@ class SeniorEaseApp extends ConsumerWidget {
         ref
             .read(contrastLevelProvider.notifier)
             .setLevel(_toContrastLevel(prefs.contrastLevel));
+        ref.read(basicModeProvider.notifier).set(enabled: prefs.basicMode);
+        ref
+            .read(enhancedFeedbackProvider.notifier)
+            .set(enabled: prefs.enhancedFeedback);
+        ref
+            .read(confirmActionsProvider.notifier)
+            .set(enabled: prefs.confirmCriticalActions);
       });
     });
 

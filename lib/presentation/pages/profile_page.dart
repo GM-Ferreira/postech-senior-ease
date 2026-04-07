@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/theme/app_spacing.dart';
 import '../../core/repositories/auth_repository.dart';
 import '../providers/auth_provider.dart';
+import '../providers/enhanced_feedback_provider.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -155,39 +156,52 @@ class ProfilePage extends ConsumerWidget {
           _EditNameDialog(currentName: currentName, authRepo: authRepo),
     );
 
+    // Aguarda o GoRouter processar a mudança de auth state antes de abrir
+    // um novo dialog, evitando que o navigator fique em estado bloqueado.
+    await Future.delayed(Duration.zero);
+
     // Feedback de sucesso após fechar o dialog de edição.
     if ((saved ?? false) && context.mounted) {
-      final colors = Theme.of(context).colorScheme;
-      await showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Icon(Icons.check_circle, color: colors.primary, size: 72),
-              const SizedBox(height: 20),
-              Text(
-                'Nome atualizado\ncom sucesso!',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colors.onSurface,
+      if (ref.read(enhancedFeedbackProvider)) {
+        final colors = Theme.of(context).colorScheme;
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Icon(Icons.check_circle, color: colors.primary, size: 72),
+                const SizedBox(height: 20),
+                Text(
+                  'Nome atualizado\ncom sucesso!',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colors.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
+                const SizedBox(height: 8),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: FilledButton.styleFrom(minimumSize: const Size(120, 48)),
+                child: const Text('OK', style: TextStyle(fontSize: 18)),
               ),
-              const SizedBox(height: 8),
             ],
           ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: FilledButton.styleFrom(minimumSize: const Size(120, 48)),
-              child: const Text('OK', style: TextStyle(fontSize: 18)),
-            ),
-          ],
-        ),
-      );
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nome atualizado com sucesso!'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 }

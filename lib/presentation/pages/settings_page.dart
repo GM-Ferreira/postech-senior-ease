@@ -4,7 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/theme/app_spacing.dart';
 import '../../core/entities/user_preferences.dart';
 import '../providers/animations_provider.dart';
+import '../providers/basic_mode_provider.dart';
+import '../providers/confirm_actions_provider.dart';
 import '../providers/contrast_provider.dart';
+import '../providers/enhanced_feedback_provider.dart';
 import '../providers/font_scale_provider.dart';
 import '../providers/spacing_provider.dart';
 import '../providers/theme_provider.dart';
@@ -52,16 +55,48 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
               contrastLevel: _toPrefsContrast(ref.read(contrastLevelProvider)),
               reduceAnimations: ref.read(reduceAnimationsProvider),
+              basicMode: ref.read(basicModeProvider),
+              enhancedFeedback: ref.read(enhancedFeedbackProvider),
+              confirmCriticalActions: ref.read(confirmActionsProvider),
             ),
           );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Preferências salvas com sucesso!'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (ref.read(enhancedFeedbackProvider)) {
+          await showDialog<void>(
+            context: context,
+            builder: (_) => AlertDialog(
+              content: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 72),
+                  SizedBox(height: 16),
+                  Text(
+                    'Preferências salvas com sucesso!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ],
+              ),
+              actions: [
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('OK', style: TextStyle(fontSize: 18)),
+                  ),
+                ),
+              ],
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Preferências salvas com sucesso!'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -103,6 +138,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     ref
         .read(reduceAnimationsProvider.notifier)
         .set(reduce: defaults.reduceAnimations);
+    ref.read(basicModeProvider.notifier).set(enabled: defaults.basicMode);
+    ref
+        .read(enhancedFeedbackProvider.notifier)
+        .set(enabled: defaults.enhancedFeedback);
+    ref
+        .read(confirmActionsProvider.notifier)
+        .set(enabled: defaults.confirmCriticalActions);
 
     setState(() => _saving = true);
     try {
@@ -134,6 +176,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final themeMode = ref.watch(themeModeProvider);
     final contrastLevel = ref.watch(contrastLevelProvider);
     final reduceAnimations = ref.watch(reduceAnimationsProvider);
+    final basicMode = ref.watch(basicModeProvider);
+    final enhancedFeedback = ref.watch(enhancedFeedbackProvider);
+    final confirmActions = ref.watch(confirmActionsProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Configurações')),
@@ -273,6 +318,67 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 value: reduceAnimations,
                 onChanged: (v) =>
                     ref.read(reduceAnimationsProvider.notifier).set(reduce: v),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // ── Modo de exibição ─────────────────────────────────────────────
+          _SettingsCard(
+            icon: Icons.view_agenda_outlined,
+            title: 'Modo de exibição',
+            children: [
+              SwitchListTile(
+                title: const Text('Modo básico'),
+                subtitle: const Text(
+                  'Exibe as tarefas de forma simplificada, com menos detalhes',
+                ),
+                value: basicMode,
+                onChanged: (v) =>
+                    ref.read(basicModeProvider.notifier).set(enabled: v),
+              ),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              _TaskPreview(basicMode: basicMode),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // ── Feedback visual ─────────────────────────────────────────────
+          _SettingsCard(
+            icon: Icons.notifications_active_outlined,
+            title: 'Feedback visual',
+            children: [
+              SwitchListTile(
+                title: const Text('Feedback reforçado'),
+                subtitle: const Text(
+                  'Exibe confirmações mais evidentes ao realizar ações',
+                ),
+                value: enhancedFeedback,
+                onChanged: (v) =>
+                    ref.read(enhancedFeedbackProvider.notifier).set(enabled: v),
+              ),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              _FeedbackPreview(enhanced: enhancedFeedback),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // ── Segurança ───────────────────────────────────────────────────
+          _SettingsCard(
+            icon: Icons.shield_outlined,
+            title: 'Segurança',
+            children: [
+              SwitchListTile(
+                title: const Text('Confirmar antes de excluir'),
+                subtitle: const Text(
+                  'Pede confirmação antes de apagar tarefas ou dados importantes',
+                ),
+                value: confirmActions,
+                onChanged: (v) =>
+                    ref.read(confirmActionsProvider.notifier).set(enabled: v),
               ),
             ],
           ),
@@ -456,6 +562,288 @@ class _SpacingPreview extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Preview de tarefa (modo básico vs avançado) ──────────────────────────────
+
+class _TaskPreview extends StatelessWidget {
+  const _TaskPreview({required this.basicMode});
+
+  final bool basicMode;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>()!;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        spacing.md,
+        spacing.sm,
+        spacing.md,
+        spacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            basicMode ? 'Prévia — Modo básico' : 'Prévia — Modo avançado',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
+          SizedBox(height: spacing.sm),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: basicMode
+                ? const _BasicTaskCard()
+                : const _AdvancedTaskCard(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BasicTaskCard extends StatelessWidget {
+  const _BasicTaskCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.check_box_outline_blank,
+            color: theme.colorScheme.primary,
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          Text('Consulta médica', style: theme.textTheme.bodyLarge),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdvancedTaskCard extends StatelessWidget {
+  const _AdvancedTaskCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border(
+          left: BorderSide(color: theme.colorScheme.error, width: 4),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.error.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'ALTA',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.error,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.schedule,
+                size: 14,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Hoje às 14h',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                Icons.check_box_outline_blank,
+                color: theme.colorScheme.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Consulta médica',
+                  style: theme.textTheme.bodyLarge,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const _ActionChip(label: 'Concluir', icon: Icons.check),
+              const SizedBox(width: 8),
+              const _ActionChip(label: 'Adiar', icon: Icons.schedule),
+              const Spacer(),
+              Icon(
+                Icons.more_horiz,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  const _ActionChip({required this.label, required this.icon});
+
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.4),
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: theme.colorScheme.primary),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Preview de feedback reforçado ────────────────────────────────────────────
+
+class _FeedbackPreview extends ConsumerWidget {
+  const _FeedbackPreview({required this.enhanced});
+
+  final bool enhanced;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>()!;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        spacing.md,
+        spacing.sm,
+        spacing.md,
+        spacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Prévia — toque para testar',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
+          SizedBox(height: spacing.sm),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Tarefa concluída!'),
+              onPressed: () =>
+                  enhanced ? _showEnhanced(context) : _showNormal(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showNormal(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Tarefa concluída!'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showEnhanced(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_circle,
+              size: 72,
+              color: Theme.of(ctx).colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Tarefa concluída!',
+              style: Theme.of(
+                ctx,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Parabéns! Continue assim.',
+              style: Theme.of(ctx).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: FilledButton.styleFrom(minimumSize: const Size(120, 48)),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
