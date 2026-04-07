@@ -47,7 +47,7 @@ class TaskActionsNotifier extends Notifier<void> {
   Future<void> create(Task task) async {
     final uid = await _getUid();
     if (uid == null) return;
-    await _repo.create(uid, task);
+    await _repo.create(uid, task.copyWith(userId: uid));
   }
 
   Future<void> update(Task task) async {

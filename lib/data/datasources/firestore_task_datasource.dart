@@ -21,7 +21,7 @@ class FirestoreTaskDatasource {
       );
 
   Future<void> create(String uid, Task task) =>
-      _collection(uid).doc(task.id).set(task.toMap());
+      _collection(uid).add(task.toMap());
 
   Future<void> update(String uid, Task task) =>
       _collection(uid).doc(task.id).update(task.toMap());

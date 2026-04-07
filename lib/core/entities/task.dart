@@ -86,6 +86,7 @@ class Task {
     String? title,
     TaskPriority? priority,
     bool? completed,
+    String? userId,
     DateTime? dueDate,
   }) => Task(
     id: id,
@@ -93,7 +94,7 @@ class Task {
     priority: priority ?? this.priority,
     completed: completed ?? this.completed,
     createdAt: createdAt,
-    userId: userId,
+    userId: userId ?? this.userId,
     dueDate: dueDate ?? this.dueDate,
   );
 }
