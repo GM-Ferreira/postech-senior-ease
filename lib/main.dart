@@ -15,6 +15,7 @@ import 'presentation/providers/enhanced_feedback_provider.dart';
 import 'presentation/providers/font_scale_provider.dart';
 import 'presentation/providers/spacing_provider.dart';
 import 'presentation/providers/theme_provider.dart';
+import 'presentation/providers/tutorial_seen_provider.dart';
 import 'presentation/providers/user_preferences_provider.dart';
 
 void main() async {
@@ -58,6 +59,7 @@ class SeniorEaseApp extends ConsumerWidget {
         ref
             .read(confirmActionsProvider.notifier)
             .set(enabled: prefs.confirmCriticalActions);
+        ref.read(tutorialSeenProvider.notifier).set(seen: prefs.tutorialSeen);
       });
     });
 

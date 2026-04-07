@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 import '../../core/entities/task.dart';
 import '../providers/auth_provider.dart';
@@ -11,16 +12,37 @@ import '../providers/basic_mode_provider.dart';
 import '../providers/confirm_actions_provider.dart';
 import '../providers/enhanced_feedback_provider.dart';
 import '../providers/tasks_provider.dart';
+import '../providers/tutorial_seen_provider.dart';
+import '../providers/user_preferences_provider.dart';
 
-class HomePage extends ConsumerWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  // GlobalKeys para o tutorial
+  final _fabKey = GlobalKey();
+  final _settingsKey = GlobalKey();
+  final _profileKey = GlobalKey();
+  final _helpKey = GlobalKey();
+  bool _tutorialChecked = false;
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
     final tasksAsync = ref.watch(tasksProvider);
     final basicMode = ref.watch(basicModeProvider);
+    final tutorialSeen = ref.watch(tutorialSeenProvider);
     final theme = Theme.of(context);
+
+    // Auto-mostra o tutorial na primeira visita, após os dados carregarem
+    if (!_tutorialChecked && !tutorialSeen && tasksAsync is! AsyncLoading) {
+      _tutorialChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showTutorial());
+    }
 
     final displayName = authState.asData?.value?.displayName;
     final greeting = displayName != null ? 'Olá, $displayName' : 'Olá!';
@@ -43,14 +65,22 @@ class HomePage extends ConsumerWidget {
               onPressed: () => context.push('/concluidas'),
             ),
           IconButton(
+            key: _settingsKey,
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Configurações',
             onPressed: () => context.push('/configuracoes'),
           ),
           IconButton(
+            key: _profileKey,
             icon: const Icon(Icons.person_outlined),
             tooltip: 'Meu perfil',
             onPressed: () => context.push('/perfil'),
+          ),
+          IconButton(
+            key: _helpKey,
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'Como usar o app',
+            onPressed: _showTutorial,
           ),
         ],
       ),
@@ -87,9 +117,7 @@ class HomePage extends ConsumerWidget {
           ),
         ),
         data: (_) => pendingTasks.isEmpty
-            ? _EmptyState(
-                onCreatePressed: () => _showCreateDialog(context, ref),
-              )
+            ? _EmptyState(onCreatePressed: () => _showCreateDialog())
             : ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
                 itemCount: pendingTasks.length,
@@ -99,14 +127,15 @@ class HomePage extends ConsumerWidget {
                   return _TaskCard(
                     task: task,
                     basicMode: basicMode,
-                    onToggle: () => _toggleTask(context, ref, task),
-                    onDelete: () => _deleteTask(context, ref, task),
+                    onToggle: () => _toggleTask(task),
+                    onDelete: () => _deleteTask(task),
                   );
                 },
               ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateDialog(context, ref),
+        key: _fabKey,
+        onPressed: _showCreateDialog,
         icon: const Icon(Icons.add),
         label: const Text('Nova tarefa'),
         tooltip: 'Criar nova tarefa',
@@ -114,7 +143,140 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  void _showCreateDialog(BuildContext context, WidgetRef ref) {
+  // ---------- Tutorial ----------
+
+  void _showTutorial() {
+    final theme = Theme.of(context);
+    final textStyle = theme.textTheme.bodyLarge!.copyWith(color: Colors.white);
+
+    final targets = <TargetFocus>[
+      TargetFocus(
+        identify: 'fab',
+        keyTarget: _fabKey,
+        alignSkip: Alignment.topCenter,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) => _TutorialStep(
+              text:
+                  'Toque aqui para criar uma nova tarefa.\n'
+                  'Você pode definir o título, a prioridade '
+                  'e uma data de vencimento.',
+              textStyle: textStyle,
+              step: '1 de 4',
+              onNext: controller.next,
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: 'settings',
+        keyTarget: _settingsKey,
+        alignSkip: Alignment.bottomCenter,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _TutorialStep(
+              text:
+                  'Personalize o app: tamanho de texto, '
+                  'contraste, espaçamento e muito mais.',
+              textStyle: textStyle,
+              step: '2 de 4',
+              onNext: controller.next,
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: 'profile',
+        keyTarget: _profileKey,
+        alignSkip: Alignment.bottomCenter,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _TutorialStep(
+              text: 'Acesse e edite seus dados pessoais.',
+              textStyle: textStyle,
+              step: '3 de 4',
+              onNext: controller.next,
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: 'help',
+        keyTarget: _helpKey,
+        alignSkip: Alignment.bottomCenter,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _TutorialStep(
+              text:
+                  'Sempre que precisar, toque aqui para '
+                  'rever este guia.',
+              textStyle: textStyle,
+              step: '4 de 4',
+              isLast: true,
+              onNext: controller.next,
+            ),
+          ),
+        ],
+      ),
+    ];
+
+    final tutorial = TutorialCoachMark(
+      targets: targets,
+      colorShadow: Colors.black,
+      opacityShadow: 0.85,
+      hideSkip: true,
+      onClickTarget: (target) {
+        _announceStep(target.identify as String);
+      },
+      onFinish: _markTutorialSeen,
+      onSkip: () {
+        _markTutorialSeen();
+        return true;
+      },
+    );
+
+    tutorial.show(context: context);
+
+    // Anuncia o primeiro passo
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      'Tutorial iniciado. Passo 1 de 4: botão nova tarefa.',
+      TextDirection.ltr,
+    );
+  }
+
+  void _markTutorialSeen() {
+    ref.read(tutorialSeenProvider.notifier).set(seen: true);
+    final prefs = ref.read(userPreferencesProvider).asData?.value;
+    if (prefs != null) {
+      ref
+          .read(userPreferencesProvider.notifier)
+          .save(prefs.copyWith(tutorialSeen: true));
+    }
+  }
+
+  void _announceStep(String identify) {
+    final announcement = switch (identify) {
+      'fab' => 'Passo 2 de 4: configurações.',
+      'settings' => 'Passo 3 de 4: perfil.',
+      'profile' => 'Passo 4 de 4: botão de ajuda.',
+      _ => 'Tutorial concluído.',
+    };
+
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      announcement,
+      TextDirection.ltr,
+    );
+  }
+
+  // ---------- Ações ----------
+
+  void _showCreateDialog() {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -123,12 +285,7 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  Future<void> _toggleTask(
-    BuildContext context,
-    WidgetRef ref,
-    Task task,
-  ) async {
-    // Dispara a escrita sem esperar — o stream reativo atualiza a UI
+  Future<void> _toggleTask(Task task) async {
     unawaited(ref.read(taskActionsProvider.notifier).toggleComplete(task));
 
     final enhanced = ref.read(enhancedFeedbackProvider);
@@ -172,11 +329,7 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  Future<void> _deleteTask(
-    BuildContext context,
-    WidgetRef ref,
-    Task task,
-  ) async {
+  Future<void> _deleteTask(Task task) async {
     final confirmActions = ref.read(confirmActionsProvider);
     final message = 'Tarefa "${task.title}" excluída';
     final scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -210,6 +363,55 @@ class HomePage extends ConsumerWidget {
       ..showSnackBar(SnackBar(content: Text(message)));
 
     SemanticsService.sendAnnouncement(view, message, TextDirection.ltr);
+  }
+}
+
+// ---------- Passo do tutorial ----------
+
+class _TutorialStep extends StatelessWidget {
+  const _TutorialStep({
+    required this.text,
+    required this.textStyle,
+    required this.step,
+    required this.onNext,
+    this.isLast = false,
+  });
+
+  final String text;
+  final TextStyle textStyle;
+  final String step;
+  final VoidCallback onNext;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(text, style: textStyle),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                step,
+                style: textStyle.copyWith(color: Colors.white70, fontSize: 13),
+              ),
+              SizedBox(
+                height: 48,
+                child: FilledButton(
+                  onPressed: onNext,
+                  child: Text(isLast ? 'Concluir' : 'Próximo'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -56,6 +56,7 @@ class UserPreferences {
     required this.basicMode,
     required this.enhancedFeedback,
     required this.confirmCriticalActions,
+    required this.tutorialSeen,
   });
 
   /// Preferências padrão com foco em acessibilidade para idosos:
@@ -70,6 +71,7 @@ class UserPreferences {
     basicMode: false,
     enhancedFeedback: false,
     confirmCriticalActions: false,
+    tutorialSeen: false,
   );
 
   /// Reconstrói a entidade a partir de um Map (Firestore).
@@ -88,6 +90,7 @@ class UserPreferences {
     basicMode: map['basicMode'] as bool? ?? false,
     enhancedFeedback: map['enhancedFeedback'] as bool? ?? false,
     confirmCriticalActions: map['confirmCriticalActions'] as bool? ?? false,
+    tutorialSeen: map['tutorialSeen'] as bool? ?? false,
   );
 
   final double fontScale;
@@ -99,6 +102,7 @@ class UserPreferences {
   final bool basicMode;
   final bool enhancedFeedback;
   final bool confirmCriticalActions;
+  final bool tutorialSeen;
 
   /// Converte para Map para persistir no Firestore.
   Map<String, dynamic> toMap() => {
@@ -111,6 +115,7 @@ class UserPreferences {
     'basicMode': basicMode,
     'enhancedFeedback': enhancedFeedback,
     'confirmCriticalActions': confirmCriticalActions,
+    'tutorialSeen': tutorialSeen,
   };
 
   UserPreferences copyWith({
@@ -123,6 +128,7 @@ class UserPreferences {
     bool? basicMode,
     bool? enhancedFeedback,
     bool? confirmCriticalActions,
+    bool? tutorialSeen,
   }) => UserPreferences(
     fontScale: fontScale ?? this.fontScale,
     contrastLevel: contrastLevel ?? this.contrastLevel,
@@ -134,5 +140,6 @@ class UserPreferences {
     enhancedFeedback: enhancedFeedback ?? this.enhancedFeedback,
     confirmCriticalActions:
         confirmCriticalActions ?? this.confirmCriticalActions,
+    tutorialSeen: tutorialSeen ?? this.tutorialSeen,
   );
 }
