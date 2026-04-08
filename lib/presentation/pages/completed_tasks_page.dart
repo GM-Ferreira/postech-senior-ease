@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../config/theme/app_spacing.dart';
 import '../../core/entities/task.dart';
+import '../adaptive/constrained_content.dart';
 import '../providers/confirm_actions_provider.dart';
 import '../providers/enhanced_feedback_provider.dart';
 import '../providers/tasks_provider.dart';
@@ -16,71 +18,74 @@ class CompletedTasksPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tasksAsync = ref.watch(tasksProvider);
     final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>()!;
 
     final completedTasks =
         tasksAsync.asData?.value.where((t) => t.completed).toList() ?? [];
 
     return Scaffold(
       appBar: AppBar(title: const Text('Tarefas concluídas')),
-      body: tasksAsync.when(
-        loading: () => Center(
-          child: Semantics(
-            label: 'Carregando tarefas concluídas',
-            child: const CircularProgressIndicator(),
-          ),
-        ),
-        error: (_, _) => Center(
-          child: Semantics(
-            liveRegion: true,
-            child: Text(
-              'Erro ao carregar tarefas',
-              style: theme.textTheme.titleMedium,
+      body: ConstrainedContent(
+        child: tasksAsync.when(
+          loading: () => Center(
+            child: Semantics(
+              label: 'Carregando tarefas concluídas',
+              child: const CircularProgressIndicator(),
             ),
           ),
-        ),
-        data: (_) => completedTasks.isEmpty
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ExcludeSemantics(
-                        child: Icon(
-                          Icons.checklist,
-                          size: 64,
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.4,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Nenhuma tarefa concluída ainda',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            : ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: completedTasks.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final task = completedTasks[index];
-                  return _CompletedTaskCard(
-                    task: task,
-                    onUncomplete: () => _uncompleteTask(context, ref, task),
-                    onDelete: () => _deleteTask(context, ref, task),
-                  );
-                },
+          error: (_, _) => Center(
+            child: Semantics(
+              liveRegion: true,
+              child: Text(
+                'Erro ao carregar tarefas',
+                style: theme.textTheme.titleMedium,
               ),
+            ),
+          ),
+          data: (_) => completedTasks.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(spacing.xl),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ExcludeSemantics(
+                          child: Icon(
+                            Icons.checklist,
+                            size: 64,
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.4,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: spacing.md),
+                        Text(
+                          'Nenhuma tarefa concluída ainda',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  padding: EdgeInsets.all(spacing.md),
+                  itemCount: completedTasks.length,
+                  separatorBuilder: (_, _) => SizedBox(height: spacing.sm),
+                  itemBuilder: (context, index) {
+                    final task = completedTasks[index];
+                    return _CompletedTaskCard(
+                      task: task,
+                      onUncomplete: () => _uncompleteTask(context, ref, task),
+                      onDelete: () => _deleteTask(context, ref, task),
+                    );
+                  },
+                ),
+        ),
       ),
     );
   }
@@ -189,13 +194,17 @@ class _CompletedTaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>()!;
 
     return Semantics(
       label: '${task.title}. Concluída',
       child: Card(
         clipBehavior: Clip.antiAlias,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: spacing.xs,
+            vertical: spacing.sm,
+          ),
           child: Row(
             children: [
               SizedBox(
@@ -207,7 +216,7 @@ class _CompletedTaskCard extends StatelessWidget {
                   semanticLabel: 'Desmarcar "${task.title}" como concluída',
                 ),
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: spacing.xs),
               Expanded(
                 child: Text(
                   task.title,

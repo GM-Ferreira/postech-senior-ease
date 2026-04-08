@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart' show ChangeNotifier;
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/entities/app_user.dart';
 import '../../core/entities/user_preferences.dart';
+import '../../presentation/adaptive/adaptive_scaffold.dart';
 import '../../presentation/pages/completed_tasks_page.dart';
 import '../../presentation/pages/forgot_password_page.dart';
 import '../../presentation/pages/home_page.dart';
@@ -145,25 +147,55 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'onboarding',
         builder: (context, state) => const OnboardingPage(),
       ),
-      GoRoute(
-        path: '/',
-        name: 'home',
-        builder: (context, state) => const HomePage(),
-      ),
-      GoRoute(
-        path: '/configuracoes',
-        name: 'configuracoes',
-        builder: (context, state) => const SettingsPage(),
-      ),
-      GoRoute(
-        path: '/perfil',
-        name: 'perfil',
-        builder: (context, state) => const ProfilePage(),
-      ),
-      GoRoute(
-        path: '/concluidas',
-        name: 'concluidas',
-        builder: (context, state) => const CompletedTasksPage(),
+
+      // ── Shell com navegação adaptativa ────────────────────────────
+      ShellRoute(
+        builder: (context, state, child) {
+          // Mapeia a rota atual para o índice da navegação
+          final index = switch (state.matchedLocation) {
+            '/concluidas' => 1,
+            '/configuracoes' => 2,
+            '/perfil' => 3,
+            _ => 0,
+          };
+
+          return AdaptiveScaffold(
+            currentIndex: index,
+            navKeys: HomePage.navKeys,
+            onDestinationSelected: (i) {
+              final path = switch (i) {
+                1 => '/concluidas',
+                2 => '/configuracoes',
+                3 => '/perfil',
+                _ => '/',
+              };
+              context.go(path);
+            },
+            body: child,
+          );
+        },
+        routes: [
+          GoRoute(
+            path: '/',
+            name: 'home',
+            builder: (context, state) => const HomePage(),
+          ),
+          GoRoute(
+            path: '/configuracoes',
+            name: 'configuracoes',
+            builder: (context, state) => const SettingsPage(),
+          ),
+          GoRoute(
+            path: '/perfil',
+            name: 'perfil',
+            builder: (context, state) => const ProfilePage(),
+          ),
+          GoRoute(
+            path: '/concluidas',
+            name: 'concluidas',
+            builder: (context, state) => const CompletedTasksPage(),
+          ),
+        ],
       ),
     ],
   );

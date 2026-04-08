@@ -3,6 +3,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/theme/app_spacing.dart';
+import '../adaptive/constrained_content.dart';
 import '../../core/entities/user_preferences.dart';
 import '../providers/animations_provider.dart';
 import '../providers/basic_mode_provider.dart';
@@ -145,234 +146,239 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Configurações')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        children: [
-          // ── Tamanho do texto ───────────────────────────────────────────────
-          _SettingsCard(
-            icon: Icons.text_fields,
-            title: 'Tamanho do texto',
-            children: [
-              RadioGroup<double>(
-                groupValue: _roundedFontScale(fontScale),
-                onChanged: (v) {
-                  ref.read(fontScaleProvider.notifier).setScale(v!);
-                  _autoSave();
-                },
-                child: const Column(
-                  children: [
-                    RadioListTile<double>(title: Text('Normal'), value: 1.0),
-                    RadioListTile<double>(title: Text('Grande'), value: 1.3),
-                    RadioListTile<double>(
-                      title: Text('Muito grande'),
-                      value: 1.6,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // ── Tema ───────────────────────────────────────────────────────────
-          _SettingsCard(
-            icon: Icons.palette_outlined,
-            title: 'Tema',
-            children: [
-              RadioGroup<ThemeMode>(
-                groupValue: themeMode,
-                onChanged: (v) {
-                  ref.read(themeModeProvider.notifier).setThemeMode(v!);
-                  _autoSave();
-                },
-                child: const Column(
-                  children: [
-                    RadioListTile<ThemeMode>(
-                      title: Text('Automático'),
-                      subtitle: Text('Segue a configuração do dispositivo'),
-                      value: ThemeMode.system,
-                    ),
-                    RadioListTile<ThemeMode>(
-                      title: Text('Claro'),
-                      value: ThemeMode.light,
-                    ),
-                    RadioListTile<ThemeMode>(
-                      title: Text('Escuro'),
-                      value: ThemeMode.dark,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // ── Contraste ──────────────────────────────────────────────────────
-          _SettingsCard(
-            icon: Icons.contrast,
-            title: 'Contraste',
-            children: [
-              RadioGroup<ContrastLevel>(
-                groupValue: contrastLevel,
-                onChanged: (v) {
-                  ref.read(contrastLevelProvider.notifier).setLevel(v!);
-                  _autoSave();
-                },
-                child: const Column(
-                  children: [
-                    RadioListTile<ContrastLevel>(
-                      title: Text('Normal'),
-                      subtitle: Text('Visual padrão do app'),
-                      value: ContrastLevel.normal,
-                    ),
-                    RadioListTile<ContrastLevel>(
-                      title: Text('Reforçado'),
-                      subtitle: Text(
-                        'Cores mais definidas para facilitar leitura',
+      body: ConstrainedContent(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          children: [
+            // ── Tamanho do texto ───────────────────────────────────────────────
+            _SettingsCard(
+              icon: Icons.text_fields,
+              title: 'Tamanho do texto',
+              children: [
+                RadioGroup<double>(
+                  groupValue: _roundedFontScale(fontScale),
+                  onChanged: (v) {
+                    ref.read(fontScaleProvider.notifier).setScale(v!);
+                    _autoSave();
+                  },
+                  child: const Column(
+                    children: [
+                      RadioListTile<double>(title: Text('Normal'), value: 1.0),
+                      RadioListTile<double>(title: Text('Grande'), value: 1.3),
+                      RadioListTile<double>(
+                        title: Text('Muito grande'),
+                        value: 1.6,
                       ),
-                      value: ContrastLevel.high,
-                    ),
-                    RadioListTile<ContrastLevel>(
-                      title: Text('Muito alto'),
-                      subtitle: Text('Máximo contraste disponível'),
-                      value: ContrastLevel.veryHigh,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // ── Espaçamento ────────────────────────────────────────────────────
-          _SettingsCard(
-            icon: Icons.space_bar,
-            title: 'Espaçamento',
-            children: [
-              RadioGroup<double>(
-                groupValue: _roundedSpacingScale(spacingScale),
-                onChanged: (v) {
-                  ref.read(spacingScaleProvider.notifier).setScale(v!);
-                  _autoSave();
-                },
-                child: const Column(
-                  children: [
-                    RadioListTile<double>(title: Text('Compacto'), value: 0.8),
-                    RadioListTile<double>(title: Text('Normal'), value: 1.0),
-                    RadioListTile<double>(
-                      title: Text('Espaçado'),
-                      subtitle: Text('Mais espaço entre os elementos'),
-                      value: 1.5,
-                    ),
-                  ],
-                ),
-              ),
-              const _SpacingPreview(),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // ── Animações ──────────────────────────────────────────────────────
-          _SettingsCard(
-            icon: Icons.animation,
-            title: 'Animações',
-            children: [
-              SwitchListTile(
-                title: const Text('Reduzir animações'),
-                subtitle: const Text(
-                  'Remove transições e efeitos visuais em movimento',
-                ),
-                value: reduceAnimations,
-                onChanged: (v) {
-                  ref.read(reduceAnimationsProvider.notifier).set(reduce: v);
-                  _autoSave();
-                },
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // ── Modo de exibição ─────────────────────────────────────────────
-          _SettingsCard(
-            icon: Icons.view_agenda_outlined,
-            title: 'Modo de exibição',
-            children: [
-              SwitchListTile(
-                title: const Text('Modo básico'),
-                subtitle: const Text(
-                  'Exibe as tarefas de forma simplificada, com menos detalhes',
-                ),
-                value: basicMode,
-                onChanged: (v) {
-                  ref.read(basicModeProvider.notifier).set(enabled: v);
-                  _autoSave();
-                },
-              ),
-              const Divider(height: 1, indent: 16, endIndent: 16),
-              _TaskPreview(basicMode: basicMode),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // ── Feedback visual ─────────────────────────────────────────────
-          _SettingsCard(
-            icon: Icons.notifications_active_outlined,
-            title: 'Feedback visual',
-            children: [
-              SwitchListTile(
-                title: const Text('Feedback reforçado'),
-                subtitle: const Text(
-                  'Exibe confirmações mais evidentes ao realizar ações',
-                ),
-                value: enhancedFeedback,
-                onChanged: (v) {
-                  ref.read(enhancedFeedbackProvider.notifier).set(enabled: v);
-                  _autoSave();
-                },
-              ),
-              const Divider(height: 1, indent: 16, endIndent: 16),
-              _FeedbackPreview(enhanced: enhancedFeedback),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // ── Segurança ───────────────────────────────────────────────────
-          _SettingsCard(
-            icon: Icons.shield_outlined,
-            title: 'Segurança',
-            children: [
-              SwitchListTile(
-                title: const Text('Confirmar antes de excluir'),
-                subtitle: const Text(
-                  'Pede confirmação antes de apagar tarefas ou dados importantes',
-                ),
-                value: confirmActions,
-                onChanged: (v) {
-                  ref.read(confirmActionsProvider.notifier).set(enabled: v);
-                  _autoSave();
-                },
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 32),
-
-          // ── Ações ──────────────────────────────────────────────────────────
-          OutlinedButton(
-            onPressed: _restoreDefaults,
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(56),
+              ],
             ),
-            child: const Text('Restaurar padrões'),
-          ),
-        ],
+
+            const SizedBox(height: 16),
+
+            // ── Tema ───────────────────────────────────────────────────────────
+            _SettingsCard(
+              icon: Icons.palette_outlined,
+              title: 'Tema',
+              children: [
+                RadioGroup<ThemeMode>(
+                  groupValue: themeMode,
+                  onChanged: (v) {
+                    ref.read(themeModeProvider.notifier).setThemeMode(v!);
+                    _autoSave();
+                  },
+                  child: const Column(
+                    children: [
+                      RadioListTile<ThemeMode>(
+                        title: Text('Automático'),
+                        subtitle: Text('Segue a configuração do dispositivo'),
+                        value: ThemeMode.system,
+                      ),
+                      RadioListTile<ThemeMode>(
+                        title: Text('Claro'),
+                        value: ThemeMode.light,
+                      ),
+                      RadioListTile<ThemeMode>(
+                        title: Text('Escuro'),
+                        value: ThemeMode.dark,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // ── Contraste ──────────────────────────────────────────────────────
+            _SettingsCard(
+              icon: Icons.contrast,
+              title: 'Contraste',
+              children: [
+                RadioGroup<ContrastLevel>(
+                  groupValue: contrastLevel,
+                  onChanged: (v) {
+                    ref.read(contrastLevelProvider.notifier).setLevel(v!);
+                    _autoSave();
+                  },
+                  child: const Column(
+                    children: [
+                      RadioListTile<ContrastLevel>(
+                        title: Text('Normal'),
+                        subtitle: Text('Visual padrão do app'),
+                        value: ContrastLevel.normal,
+                      ),
+                      RadioListTile<ContrastLevel>(
+                        title: Text('Reforçado'),
+                        subtitle: Text(
+                          'Cores mais definidas para facilitar leitura',
+                        ),
+                        value: ContrastLevel.high,
+                      ),
+                      RadioListTile<ContrastLevel>(
+                        title: Text('Muito alto'),
+                        subtitle: Text('Máximo contraste disponível'),
+                        value: ContrastLevel.veryHigh,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // ── Espaçamento ────────────────────────────────────────────────────
+            _SettingsCard(
+              icon: Icons.space_bar,
+              title: 'Espaçamento',
+              children: [
+                RadioGroup<double>(
+                  groupValue: _roundedSpacingScale(spacingScale),
+                  onChanged: (v) {
+                    ref.read(spacingScaleProvider.notifier).setScale(v!);
+                    _autoSave();
+                  },
+                  child: const Column(
+                    children: [
+                      RadioListTile<double>(
+                        title: Text('Compacto'),
+                        value: 0.8,
+                      ),
+                      RadioListTile<double>(title: Text('Normal'), value: 1.0),
+                      RadioListTile<double>(
+                        title: Text('Espaçado'),
+                        subtitle: Text('Mais espaço entre os elementos'),
+                        value: 1.5,
+                      ),
+                    ],
+                  ),
+                ),
+                const _SpacingPreview(),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // ── Animações ──────────────────────────────────────────────────────
+            _SettingsCard(
+              icon: Icons.animation,
+              title: 'Animações',
+              children: [
+                SwitchListTile(
+                  title: const Text('Reduzir animações'),
+                  subtitle: const Text(
+                    'Remove transições e efeitos visuais em movimento',
+                  ),
+                  value: reduceAnimations,
+                  onChanged: (v) {
+                    ref.read(reduceAnimationsProvider.notifier).set(reduce: v);
+                    _autoSave();
+                  },
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // ── Modo de exibição ─────────────────────────────────────────────
+            _SettingsCard(
+              icon: Icons.view_agenda_outlined,
+              title: 'Modo de exibição',
+              children: [
+                SwitchListTile(
+                  title: const Text('Modo básico'),
+                  subtitle: const Text(
+                    'Exibe as tarefas de forma simplificada, com menos detalhes',
+                  ),
+                  value: basicMode,
+                  onChanged: (v) {
+                    ref.read(basicModeProvider.notifier).set(enabled: v);
+                    _autoSave();
+                  },
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                _TaskPreview(basicMode: basicMode),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // ── Feedback visual ─────────────────────────────────────────────
+            _SettingsCard(
+              icon: Icons.notifications_active_outlined,
+              title: 'Feedback visual',
+              children: [
+                SwitchListTile(
+                  title: const Text('Feedback reforçado'),
+                  subtitle: const Text(
+                    'Exibe confirmações mais evidentes ao realizar ações',
+                  ),
+                  value: enhancedFeedback,
+                  onChanged: (v) {
+                    ref.read(enhancedFeedbackProvider.notifier).set(enabled: v);
+                    _autoSave();
+                  },
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                _FeedbackPreview(enhanced: enhancedFeedback),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // ── Segurança ───────────────────────────────────────────────────
+            _SettingsCard(
+              icon: Icons.shield_outlined,
+              title: 'Segurança',
+              children: [
+                SwitchListTile(
+                  title: const Text('Confirmar antes de excluir'),
+                  subtitle: const Text(
+                    'Pede confirmação antes de apagar tarefas ou dados importantes',
+                  ),
+                  value: confirmActions,
+                  onChanged: (v) {
+                    ref.read(confirmActionsProvider.notifier).set(enabled: v);
+                    _autoSave();
+                  },
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+
+            // ── Ações ──────────────────────────────────────────────────────────
+            OutlinedButton(
+              onPressed: _restoreDefaults,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(56),
+              ),
+              child: const Text('Restaurar padrões'),
+            ),
+          ],
+        ),
       ),
     );
   }
