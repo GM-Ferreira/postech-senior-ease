@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/entities/app_user.dart';
 import '../../core/entities/user_preferences.dart';
+import '../../presentation/pages/completed_tasks_page.dart';
 import '../../presentation/pages/forgot_password_page.dart';
 import '../../presentation/pages/home_page.dart';
 import '../../presentation/pages/login_page.dart';
@@ -158,6 +159,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/perfil',
         name: 'perfil',
         builder: (context, state) => const ProfilePage(),
+      ),
+      GoRoute(
+        path: '/concluidas',
+        name: 'concluidas',
+        builder: (context, state) => const CompletedTasksPage(),
       ),
     ],
   );

@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'config/routes/app_router.dart';
@@ -14,6 +15,7 @@ import 'presentation/providers/enhanced_feedback_provider.dart';
 import 'presentation/providers/font_scale_provider.dart';
 import 'presentation/providers/spacing_provider.dart';
 import 'presentation/providers/theme_provider.dart';
+import 'presentation/providers/tutorial_seen_provider.dart';
 import 'presentation/providers/user_preferences_provider.dart';
 
 void main() async {
@@ -57,6 +59,7 @@ class SeniorEaseApp extends ConsumerWidget {
         ref
             .read(confirmActionsProvider.notifier)
             .set(enabled: prefs.confirmCriticalActions);
+        ref.read(tutorialSeenProvider.notifier).set(seen: prefs.tutorialSeen);
       });
     });
 
@@ -84,6 +87,13 @@ class SeniorEaseApp extends ConsumerWidget {
       child: MaterialApp.router(
         title: 'SeniorEase',
         debugShowCheckedModeBanner: false,
+        locale: const Locale('pt', 'BR'),
+        supportedLocales: const [Locale('pt', 'BR')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         theme: buildLightTheme(
           contrastLevel: contrastLevel.value,
           spacingScale: spacingScale,
