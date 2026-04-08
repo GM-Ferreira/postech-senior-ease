@@ -3,10 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 import '../../core/entities/task.dart';
+import '../adaptive/adaptive_scaffold.dart';
+import '../adaptive/constrained_content.dart';
 import '../providers/auth_provider.dart';
 import '../providers/basic_mode_provider.dart';
 import '../providers/confirm_actions_provider.dart';
@@ -18,6 +19,15 @@ import '../providers/user_preferences_provider.dart';
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
+  /// GlobalKeys compartilhadas para os itens de navegação.
+  /// Usadas pelo router (AdaptiveScaffold) e pelo tutorial.
+  static final navKeys = <int, GlobalKey>{
+    0: GlobalKey(debugLabel: 'nav_inicio'),
+    1: GlobalKey(debugLabel: 'nav_concluidas'),
+    2: GlobalKey(debugLabel: 'nav_settings'),
+    3: GlobalKey(debugLabel: 'nav_profile'),
+  };
+
   @override
   ConsumerState<HomePage> createState() => _HomePageState();
 }
@@ -25,9 +35,6 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   // GlobalKeys para o tutorial
   final _fabKey = GlobalKey();
-  final _settingsKey = GlobalKey();
-  final _profileKey = GlobalKey();
-  final _helpKey = GlobalKey();
   bool _tutorialChecked = false;
 
   @override
@@ -51,128 +58,108 @@ class _HomePageState extends ConsumerState<HomePage> {
     final pendingTasks =
         tasksAsync.asData?.value.where((t) => !t.completed).toList() ?? [];
 
-    final completedCount =
-        tasksAsync.asData?.value.where((t) => t.completed).length ?? 0;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(greeting),
         actions: [
-          if (completedCount > 0)
-            IconButton(
-              icon: const Icon(Icons.checklist),
-              tooltip: 'Ver concluídas ($completedCount)',
-              onPressed: () => context.push('/concluidas'),
-            ),
           IconButton(
-            key: _settingsKey,
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Configurações',
-            onPressed: () => context.push('/configuracoes'),
-          ),
-          IconButton(
-            key: _profileKey,
-            icon: const Icon(Icons.person_outlined),
-            tooltip: 'Meu perfil',
-            onPressed: () => context.push('/perfil'),
-          ),
-          IconButton(
-            key: _helpKey,
             icon: const Icon(Icons.help_outline),
             tooltip: 'Como usar o app',
             onPressed: _showTutorial,
           ),
         ],
       ),
-      body: tasksAsync.when(
-        loading: () => Center(
-          child: Semantics(
-            label: 'Carregando tarefas',
-            child: const CircularProgressIndicator(),
+      body: ConstrainedContent(
+        child: tasksAsync.when(
+          loading: () => Center(
+            child: Semantics(
+              label: 'Carregando tarefas',
+              child: const CircularProgressIndicator(),
+            ),
           ),
-        ),
-        error: (e, _) => Center(
-          child: Semantics(
-            liveRegion: true,
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ExcludeSemantics(
-                    child: Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: theme.colorScheme.error,
+          error: (e, _) => Center(
+            child: Semantics(
+              liveRegion: true,
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ExcludeSemantics(
+                      child: Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: theme.colorScheme.error,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Erro ao carregar tarefas',
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    Text(
+                      'Erro ao carregar tarefas',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        data: (_) {
-          if (pendingTasks.isEmpty) {
-            return _EmptyState(onCreatePressed: () => _showCreateDialog());
-          }
+          data: (_) {
+            if (pendingTasks.isEmpty) {
+              return _EmptyState(onCreatePressed: () => _showCreateDialog());
+            }
 
-          // Modo básico: lista plana simples
-          if (basicMode) {
-            final overdue = pendingTasks
+            // Modo básico: lista plana simples
+            if (basicMode) {
+              final overdue = pendingTasks
+                  .where((t) => _getUrgency(t.dueDate) == _Urgency.overdue)
+                  .toList();
+              final rest = pendingTasks
+                  .where((t) => _getUrgency(t.dueDate) != _Urgency.overdue)
+                  .toList();
+              final sorted = [...overdue, ...rest];
+
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+                itemCount: sorted.length + (overdue.isNotEmpty ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (overdue.isNotEmpty && index == 0) {
+                    return _OverdueWarning(count: overdue.length);
+                  }
+                  final task = sorted[overdue.isNotEmpty ? index - 1 : index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _TaskCard(
+                      task: task,
+                      basicMode: basicMode,
+                      onToggle: () => _toggleTask(task),
+                      onDelete: () => _deleteTask(task),
+                    ),
+                  );
+                },
+              );
+            }
+
+            // Modo avançado: lista com seções
+            final overdueTasks = pendingTasks
                 .where((t) => _getUrgency(t.dueDate) == _Urgency.overdue)
                 .toList();
-            final rest = pendingTasks
-                .where((t) => _getUrgency(t.dueDate) != _Urgency.overdue)
+            final todayTasks = pendingTasks
+                .where((t) => _getUrgency(t.dueDate) == _Urgency.today)
                 .toList();
-            final sorted = [...overdue, ...rest];
+            final otherTasks = pendingTasks.where((t) {
+              final u = _getUrgency(t.dueDate);
+              return u != _Urgency.overdue && u != _Urgency.today;
+            }).toList();
 
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-              itemCount: sorted.length + (overdue.isNotEmpty ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (overdue.isNotEmpty && index == 0) {
-                  return _OverdueWarning(count: overdue.length);
-                }
-                final task = sorted[overdue.isNotEmpty ? index - 1 : index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _TaskCard(
-                    task: task,
-                    basicMode: basicMode,
-                    onToggle: () => _toggleTask(task),
-                    onDelete: () => _deleteTask(task),
-                  ),
-                );
-              },
+            return _SectionedTaskList(
+              overdueTasks: overdueTasks,
+              todayTasks: todayTasks,
+              otherTasks: otherTasks,
+              basicMode: basicMode,
+              onToggle: _toggleTask,
+              onDelete: _deleteTask,
             );
-          }
-
-          // Modo avançado: lista com seções
-          final overdueTasks = pendingTasks
-              .where((t) => _getUrgency(t.dueDate) == _Urgency.overdue)
-              .toList();
-          final todayTasks = pendingTasks
-              .where((t) => _getUrgency(t.dueDate) == _Urgency.today)
-              .toList();
-          final otherTasks = pendingTasks.where((t) {
-            final u = _getUrgency(t.dueDate);
-            return u != _Urgency.overdue && u != _Urgency.today;
-          }).toList();
-
-          return _SectionedTaskList(
-            overdueTasks: overdueTasks,
-            todayTasks: todayTasks,
-            otherTasks: otherTasks,
-            basicMode: basicMode,
-            onToggle: _toggleTask,
-            onDelete: _deleteTask,
-          );
-        },
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         key: _fabKey,
@@ -190,6 +177,17 @@ class _HomePageState extends ConsumerState<HomePage> {
     final theme = Theme.of(context);
     final textStyle = theme.textTheme.bodyLarge!.copyWith(color: Colors.white);
 
+    final navKeys = HomePage.navKeys;
+
+    // No mobile (compact) a nav fica embaixo → texto vai para cima.
+    // Na web (expanded) a nav fica na lateral → texto vai para a direita.
+    final breakpoint = getBreakpoint(MediaQuery.sizeOf(context).width);
+    final isCompact = breakpoint == LayoutBreakpoint.compact;
+    final navContentAlign = isCompact ? ContentAlign.top : ContentAlign.right;
+
+    // Mobile: padding maior para cobrir ícone + label da aba
+    final navPadding = isCompact ? 40.0 : 15.0;
+
     final targets = <TargetFocus>[
       TargetFocus(
         identify: 'fab',
@@ -204,7 +202,49 @@ class _HomePageState extends ConsumerState<HomePage> {
                   'Você pode definir o título, a prioridade '
                   'e uma data de vencimento.',
               textStyle: textStyle,
-              step: '1 de 4',
+              step: '1 de 5',
+              onNext: controller.next,
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: 'inicio',
+        keyTarget: navKeys[0]!,
+        shape: ShapeLightFocus.RRect,
+        radius: 8,
+        paddingFocus: navPadding,
+        alignSkip: Alignment.topCenter,
+        contents: [
+          TargetContent(
+            align: navContentAlign,
+            builder: (context, controller) => _TutorialStep(
+              text:
+                  'Esta é a tela Início, onde ficam '
+                  'todas as suas tarefas pendentes.',
+              textStyle: textStyle,
+              step: '2 de 5',
+              onNext: controller.next,
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: 'concluidas',
+        keyTarget: navKeys[1]!,
+        shape: ShapeLightFocus.RRect,
+        radius: 8,
+        paddingFocus: navPadding,
+        alignSkip: Alignment.topCenter,
+        contents: [
+          TargetContent(
+            align: navContentAlign,
+            builder: (context, controller) => _TutorialStep(
+              text:
+                  'Veja aqui todas as tarefas que você '
+                  'já concluiu.',
+              textStyle: textStyle,
+              step: '3 de 5',
               onNext: controller.next,
             ),
           ),
@@ -212,17 +252,20 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
       TargetFocus(
         identify: 'settings',
-        keyTarget: _settingsKey,
-        alignSkip: Alignment.bottomCenter,
+        keyTarget: navKeys[2]!,
+        shape: ShapeLightFocus.RRect,
+        radius: 8,
+        paddingFocus: navPadding,
+        alignSkip: Alignment.topCenter,
         contents: [
           TargetContent(
-            align: ContentAlign.bottom,
+            align: navContentAlign,
             builder: (context, controller) => _TutorialStep(
               text:
                   'Personalize o app: tamanho de texto, '
                   'contraste, espaçamento e muito mais.',
               textStyle: textStyle,
-              step: '2 de 4',
+              step: '4 de 5',
               onNext: controller.next,
             ),
           ),
@@ -230,33 +273,18 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
       TargetFocus(
         identify: 'profile',
-        keyTarget: _profileKey,
-        alignSkip: Alignment.bottomCenter,
+        keyTarget: navKeys[3]!,
+        shape: ShapeLightFocus.RRect,
+        radius: 8,
+        paddingFocus: navPadding,
+        alignSkip: Alignment.topCenter,
         contents: [
           TargetContent(
-            align: ContentAlign.bottom,
+            align: navContentAlign,
             builder: (context, controller) => _TutorialStep(
               text: 'Acesse e edite seus dados pessoais.',
               textStyle: textStyle,
-              step: '3 de 4',
-              onNext: controller.next,
-            ),
-          ),
-        ],
-      ),
-      TargetFocus(
-        identify: 'help',
-        keyTarget: _helpKey,
-        alignSkip: Alignment.bottomCenter,
-        contents: [
-          TargetContent(
-            align: ContentAlign.bottom,
-            builder: (context, controller) => _TutorialStep(
-              text:
-                  'Sempre que precisar, toque aqui para '
-                  'rever este guia.',
-              textStyle: textStyle,
-              step: '4 de 4',
+              step: '5 de 5',
               isLast: true,
               onNext: controller.next,
             ),
@@ -280,12 +308,12 @@ class _HomePageState extends ConsumerState<HomePage> {
       },
     );
 
-    tutorial.show(context: context);
+    tutorial.show(context: context, rootOverlay: true);
 
     // Anuncia o primeiro passo
     SemanticsService.sendAnnouncement(
       View.of(context),
-      'Tutorial iniciado. Passo 1 de 4: botão nova tarefa.',
+      'Tutorial iniciado. Passo 1 de 5: botão nova tarefa.',
       TextDirection.ltr,
     );
   }
@@ -302,9 +330,10 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _announceStep(String identify) {
     final announcement = switch (identify) {
-      'fab' => 'Passo 2 de 4: configurações.',
-      'settings' => 'Passo 3 de 4: perfil.',
-      'profile' => 'Passo 4 de 4: botão de ajuda.',
+      'fab' => 'Passo 2 de 5: início.',
+      'inicio' => 'Passo 3 de 5: concluídas.',
+      'concluidas' => 'Passo 4 de 5: configurações.',
+      'settings' => 'Passo 5 de 5: perfil.',
       _ => 'Tutorial concluído.',
     };
 

@@ -13,7 +13,7 @@ flutter pub get
 flutter devices
 
 # Rodar no Chrome (web)
-flutter run -d chrome
+flutter run -d chrome --web-port 8080
 
 # Rodar no emulador Android
 flutter run -d emulator-5554
