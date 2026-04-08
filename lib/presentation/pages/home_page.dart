@@ -5,6 +5,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
+import '../../config/theme/app_spacing.dart';
 import '../../core/entities/task.dart';
 import '../adaptive/adaptive_scaffold.dart';
 import '../adaptive/constrained_content.dart';
@@ -44,6 +45,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final basicMode = ref.watch(basicModeProvider);
     final tutorialSeen = ref.watch(tutorialSeenProvider);
     final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>()!;
 
     // Auto-mostra o tutorial na primeira visita, após os dados carregarem
     if (!_tutorialChecked && !tutorialSeen && tasksAsync is! AsyncLoading) {
@@ -81,7 +83,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: Semantics(
               liveRegion: true,
               child: Padding(
-                padding: const EdgeInsets.all(32),
+                padding: EdgeInsets.all(spacing.xl),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -92,7 +94,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         color: theme.colorScheme.error,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: spacing.md),
                     Text(
                       'Erro ao carregar tarefas',
                       style: theme.textTheme.titleMedium,
@@ -118,7 +120,12 @@ class _HomePageState extends ConsumerState<HomePage> {
               final sorted = [...overdue, ...rest];
 
               return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+                padding: EdgeInsets.fromLTRB(
+                  spacing.md,
+                  spacing.md,
+                  spacing.md,
+                  88,
+                ),
                 itemCount: sorted.length + (overdue.isNotEmpty ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (overdue.isNotEmpty && index == 0) {
@@ -126,7 +133,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   }
                   final task = sorted[overdue.isNotEmpty ? index - 1 : index];
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: EdgeInsets.only(bottom: spacing.sm),
                     child: _TaskCard(
                       task: task,
                       basicMode: basicMode,
@@ -495,6 +502,7 @@ class _OverdueWarning extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>()!;
     final text =
         'Você tem $count tarefa${count > 1 ? 's' : ''} atrasada${count > 1 ? 's' : ''}';
 
@@ -503,14 +511,14 @@ class _OverdueWarning extends StatelessWidget {
       child: Card(
         color: theme.colorScheme.errorContainer,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(spacing.md),
           child: Row(
             children: [
               Icon(
                 Icons.warning_amber_rounded,
                 color: theme.colorScheme.onErrorContainer,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: spacing.sm),
               Expanded(
                 child: Text(
                   text,
@@ -549,8 +557,9 @@ class _SectionedTaskList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final spacing = Theme.of(context).extension<AppSpacing>()!;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+      padding: EdgeInsets.fromLTRB(spacing.md, spacing.md, spacing.md, 88),
       children: [
         if (overdueTasks.isNotEmpty)
           _TaskSection(
@@ -611,6 +620,7 @@ class _TaskSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>()!;
 
     final (bgColor, fgColor, borderColor) = switch (type) {
       _SectionType.overdue => (
@@ -631,18 +641,23 @@ class _TaskSection extends StatelessWidget {
     };
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: spacing.md),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(spacing.md),
           border: borderColor != Colors.transparent
               ? Border.all(color: borderColor.withValues(alpha: 0.4))
               : null,
         ),
         child: Padding(
           padding: type != _SectionType.normal
-              ? const EdgeInsets.fromLTRB(12, 12, 12, 8)
+              ? EdgeInsets.fromLTRB(
+                  spacing.sm,
+                  spacing.sm,
+                  spacing.sm,
+                  spacing.sm,
+                )
               : EdgeInsets.zero,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -652,11 +667,11 @@ class _TaskSection extends StatelessWidget {
                 header: true,
                 liveRegion: type == _SectionType.overdue,
                 child: Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.only(bottom: spacing.sm),
                   child: Row(
                     children: [
                       Icon(icon, size: 20, color: fgColor),
-                      const SizedBox(width: 8),
+                      SizedBox(width: spacing.sm),
                       Text(
                         title,
                         style: theme.textTheme.titleSmall?.copyWith(
@@ -671,7 +686,7 @@ class _TaskSection extends StatelessWidget {
               // Cards das tarefas
               ...tasks.map(
                 (task) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.only(bottom: spacing.sm),
                   child: _TaskCard(
                     task: task,
                     basicMode: basicMode,
@@ -698,10 +713,11 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>()!;
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(spacing.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -712,7 +728,7 @@ class _EmptyState extends StatelessWidget {
                 color: theme.colorScheme.primary.withValues(alpha: 0.4),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: spacing.lg),
             Text(
               'Nenhuma tarefa pendente',
               style: theme.textTheme.titleLarge?.copyWith(
@@ -720,7 +736,7 @@ class _EmptyState extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: spacing.sm),
             Text(
               'Toque no botão abaixo para criar sua primeira tarefa.',
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -728,7 +744,7 @@ class _EmptyState extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: spacing.xl),
             FilledButton.icon(
               onPressed: onCreatePressed,
               icon: const Icon(Icons.add),
@@ -759,6 +775,7 @@ class _TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>()!;
     final urgency = _getUrgency(task.dueDate);
 
     return Semantics(
@@ -775,7 +792,10 @@ class _TaskCard extends StatelessWidget {
               )
             : null,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: spacing.xs,
+            vertical: spacing.sm,
+          ),
           child: Row(
             children: [
               // Checkbox de conclusão
@@ -788,7 +808,7 @@ class _TaskCard extends StatelessWidget {
                   semanticLabel: 'Marcar "${task.title}" como concluída',
                 ),
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: spacing.xs),
               // Conteúdo
               Expanded(
                 child: Column(
@@ -801,10 +821,10 @@ class _TaskCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (!basicMode) ...[
-                      const SizedBox(height: 4),
+                      SizedBox(height: spacing.xs),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
+                        spacing: spacing.sm,
+                        runSpacing: spacing.xs,
                         children: [
                           _PriorityChip(priority: task.priority),
                           if (task.dueDate != null)
@@ -817,7 +837,7 @@ class _TaskCard extends StatelessWidget {
                     ],
                     if (basicMode && urgency == _Urgency.overdue)
                       Padding(
-                        padding: const EdgeInsets.only(top: 4),
+                        padding: EdgeInsets.only(top: spacing.xs),
                         child: Text(
                           'Atrasada',
                           style: theme.textTheme.labelSmall?.copyWith(
@@ -913,7 +933,7 @@ class _PriorityChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
+          SizedBox(width: Theme.of(context).extension<AppSpacing>()!.xs),
           Text(
             priority.label,
             style: theme.textTheme.labelSmall?.copyWith(color: color),
@@ -946,7 +966,7 @@ class _DueDateChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.schedule, size: 14, color: color),
-          const SizedBox(width: 4),
+          SizedBox(width: Theme.of(context).extension<AppSpacing>()!.xs),
           Text(
             text,
             style: theme.textTheme.labelSmall?.copyWith(
@@ -988,19 +1008,21 @@ class _CreateTaskSheetState extends ConsumerState<_CreateTaskSheet> {
     final theme = Theme.of(context);
     final basicMode = ref.watch(basicModeProvider);
 
+    final spacing = theme.extension<AppSpacing>()!;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        24,
-        24,
-        24,
-        24 + MediaQuery.viewInsetsOf(context).bottom,
+        spacing.lg,
+        spacing.lg,
+        spacing.lg,
+        spacing.lg + MediaQuery.viewInsetsOf(context).bottom,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('Nova tarefa', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 24),
+          SizedBox(height: spacing.lg),
 
           // Título
           TextField(
@@ -1015,11 +1037,11 @@ class _CreateTaskSheetState extends ConsumerState<_CreateTaskSheet> {
           ),
 
           if (!basicMode) ...[
-            const SizedBox(height: 20),
+            SizedBox(height: spacing.md + spacing.xs),
 
             // Prioridade
             Text('Prioridade', style: theme.textTheme.titleSmall),
-            const SizedBox(height: 8),
+            SizedBox(height: spacing.sm),
             SegmentedButton<TaskPriority>(
               segments: const [
                 ButtonSegment(
@@ -1042,7 +1064,7 @@ class _CreateTaskSheetState extends ConsumerState<_CreateTaskSheet> {
               onSelectionChanged: (v) => setState(() => _priority = v.first),
             ),
 
-            const SizedBox(height: 16),
+            SizedBox(height: spacing.md),
 
             // Data de vencimento
             OutlinedButton.icon(
@@ -1064,7 +1086,7 @@ class _CreateTaskSheetState extends ConsumerState<_CreateTaskSheet> {
               ),
           ],
 
-          const SizedBox(height: 24),
+          SizedBox(height: spacing.lg),
 
           // Botão salvar
           FilledButton.icon(

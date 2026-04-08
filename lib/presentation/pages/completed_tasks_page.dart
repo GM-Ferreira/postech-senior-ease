@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../config/theme/app_spacing.dart';
 import '../../core/entities/task.dart';
 import '../adaptive/constrained_content.dart';
 import '../providers/confirm_actions_provider.dart';
@@ -17,6 +18,7 @@ class CompletedTasksPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tasksAsync = ref.watch(tasksProvider);
     final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>()!;
 
     final completedTasks =
         tasksAsync.asData?.value.where((t) => t.completed).toList() ?? [];
@@ -43,7 +45,7 @@ class CompletedTasksPage extends ConsumerWidget {
           data: (_) => completedTasks.isEmpty
               ? Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(32),
+                    padding: EdgeInsets.all(spacing.xl),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -56,7 +58,7 @@ class CompletedTasksPage extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: spacing.md),
                         Text(
                           'Nenhuma tarefa concluída ainda',
                           style: theme.textTheme.titleMedium?.copyWith(
@@ -71,9 +73,9 @@ class CompletedTasksPage extends ConsumerWidget {
                   ),
                 )
               : ListView.separated(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(spacing.md),
                   itemCount: completedTasks.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => SizedBox(height: spacing.sm),
                   itemBuilder: (context, index) {
                     final task = completedTasks[index];
                     return _CompletedTaskCard(
@@ -192,13 +194,17 @@ class _CompletedTaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final spacing = theme.extension<AppSpacing>()!;
 
     return Semantics(
       label: '${task.title}. Concluída',
       child: Card(
         clipBehavior: Clip.antiAlias,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: spacing.xs,
+            vertical: spacing.sm,
+          ),
           child: Row(
             children: [
               SizedBox(
@@ -210,7 +216,7 @@ class _CompletedTaskCard extends StatelessWidget {
                   semanticLabel: 'Desmarcar "${task.title}" como concluída',
                 ),
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: spacing.xs),
               Expanded(
                 child: Text(
                   task.title,
