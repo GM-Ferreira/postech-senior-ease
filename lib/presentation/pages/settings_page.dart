@@ -22,8 +22,6 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  bool _saving = false;
-
   PreferencesContrastLevel _toPrefsContrast(ContrastLevel level) =>
       switch (level) {
         ContrastLevel.high => PreferencesContrastLevel.high,
@@ -38,76 +36,27 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         PreferencesContrastLevel.normal => ContrastLevel.normal,
       };
 
-  Future<void> _save() async {
-    setState(() => _saving = true);
-    try {
-      final current =
-          ref.read(userPreferencesProvider).asData?.value ??
-          UserPreferences.defaults();
+  void _autoSave() {
+    final current =
+        ref.read(userPreferencesProvider).asData?.value ??
+        UserPreferences.defaults();
 
-      await ref
-          .read(userPreferencesProvider.notifier)
-          .save(
-            current.copyWith(
-              fontScale: ref.read(fontScaleProvider),
-              spacingScale: ref.read(spacingScaleProvider),
-              themeMode: PreferencesThemeMode.fromThemeMode(
-                ref.read(themeModeProvider),
-              ),
-              contrastLevel: _toPrefsContrast(ref.read(contrastLevelProvider)),
-              reduceAnimations: ref.read(reduceAnimationsProvider),
-              basicMode: ref.read(basicModeProvider),
-              enhancedFeedback: ref.read(enhancedFeedbackProvider),
-              confirmCriticalActions: ref.read(confirmActionsProvider),
+    ref
+        .read(userPreferencesProvider.notifier)
+        .save(
+          current.copyWith(
+            fontScale: ref.read(fontScaleProvider),
+            spacingScale: ref.read(spacingScaleProvider),
+            themeMode: PreferencesThemeMode.fromThemeMode(
+              ref.read(themeModeProvider),
             ),
-          );
-
-      if (mounted) {
-        if (ref.read(enhancedFeedbackProvider)) {
-          await showDialog<void>(
-            context: context,
-            builder: (_) => AlertDialog(
-              content: const Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ExcludeSemantics(
-                    child: Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 72,
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Preferências salvas com sucesso!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ],
-              ),
-              actions: [
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('OK', style: TextStyle(fontSize: 18)),
-                  ),
-                ),
-              ],
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Preferências salvas com sucesso!'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+            contrastLevel: _toPrefsContrast(ref.read(contrastLevelProvider)),
+            reduceAnimations: ref.read(reduceAnimationsProvider),
+            basicMode: ref.read(basicModeProvider),
+            enhancedFeedback: ref.read(enhancedFeedbackProvider),
+            confirmCriticalActions: ref.read(confirmActionsProvider),
+          ),
+        );
   }
 
   Future<void> _restoreDefaults() async {
@@ -153,7 +102,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         .read(confirmActionsProvider.notifier)
         .set(enabled: defaults.confirmCriticalActions);
 
-    setState(() => _saving = true);
     try {
       final current =
           ref.read(userPreferencesProvider).asData?.value ??
@@ -161,7 +109,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       await ref
           .read(userPreferencesProvider.notifier)
           .save(
-            defaults.copyWith(onboardingCompleted: current.onboardingCompleted),
+            defaults.copyWith(
+              onboardingCompleted: current.onboardingCompleted,
+              tutorialSeen: current.tutorialSeen,
+            ),
           );
       if (mounted) {
         SemanticsService.sendAnnouncement(
@@ -176,8 +127,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ),
         );
       }
-    } finally {
-      if (mounted) setState(() => _saving = false);
+    } catch (_) {
+      // Silencia erro — preferências locais já foram restauradas
     }
   }
 
@@ -204,8 +155,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             children: [
               RadioGroup<double>(
                 groupValue: _roundedFontScale(fontScale),
-                onChanged: (v) =>
-                    ref.read(fontScaleProvider.notifier).setScale(v!),
+                onChanged: (v) {
+                  ref.read(fontScaleProvider.notifier).setScale(v!);
+                  _autoSave();
+                },
                 child: const Column(
                   children: [
                     RadioListTile<double>(title: Text('Normal'), value: 1.0),
@@ -229,8 +182,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             children: [
               RadioGroup<ThemeMode>(
                 groupValue: themeMode,
-                onChanged: (v) =>
-                    ref.read(themeModeProvider.notifier).setThemeMode(v!),
+                onChanged: (v) {
+                  ref.read(themeModeProvider.notifier).setThemeMode(v!);
+                  _autoSave();
+                },
                 child: const Column(
                   children: [
                     RadioListTile<ThemeMode>(
@@ -261,8 +216,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             children: [
               RadioGroup<ContrastLevel>(
                 groupValue: contrastLevel,
-                onChanged: (v) =>
-                    ref.read(contrastLevelProvider.notifier).setLevel(v!),
+                onChanged: (v) {
+                  ref.read(contrastLevelProvider.notifier).setLevel(v!);
+                  _autoSave();
+                },
                 child: const Column(
                   children: [
                     RadioListTile<ContrastLevel>(
@@ -297,8 +254,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             children: [
               RadioGroup<double>(
                 groupValue: _roundedSpacingScale(spacingScale),
-                onChanged: (v) =>
-                    ref.read(spacingScaleProvider.notifier).setScale(v!),
+                onChanged: (v) {
+                  ref.read(spacingScaleProvider.notifier).setScale(v!);
+                  _autoSave();
+                },
                 child: const Column(
                   children: [
                     RadioListTile<double>(title: Text('Compacto'), value: 0.8),
@@ -328,8 +287,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   'Remove transições e efeitos visuais em movimento',
                 ),
                 value: reduceAnimations,
-                onChanged: (v) =>
-                    ref.read(reduceAnimationsProvider.notifier).set(reduce: v),
+                onChanged: (v) {
+                  ref.read(reduceAnimationsProvider.notifier).set(reduce: v);
+                  _autoSave();
+                },
               ),
             ],
           ),
@@ -347,8 +308,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   'Exibe as tarefas de forma simplificada, com menos detalhes',
                 ),
                 value: basicMode,
-                onChanged: (v) =>
-                    ref.read(basicModeProvider.notifier).set(enabled: v),
+                onChanged: (v) {
+                  ref.read(basicModeProvider.notifier).set(enabled: v);
+                  _autoSave();
+                },
               ),
               const Divider(height: 1, indent: 16, endIndent: 16),
               _TaskPreview(basicMode: basicMode),
@@ -368,8 +331,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   'Exibe confirmações mais evidentes ao realizar ações',
                 ),
                 value: enhancedFeedback,
-                onChanged: (v) =>
-                    ref.read(enhancedFeedbackProvider.notifier).set(enabled: v),
+                onChanged: (v) {
+                  ref.read(enhancedFeedbackProvider.notifier).set(enabled: v);
+                  _autoSave();
+                },
               ),
               const Divider(height: 1, indent: 16, endIndent: 16),
               _FeedbackPreview(enhanced: enhancedFeedback),
@@ -389,8 +354,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   'Pede confirmação antes de apagar tarefas ou dados importantes',
                 ),
                 value: confirmActions,
-                onChanged: (v) =>
-                    ref.read(confirmActionsProvider.notifier).set(enabled: v),
+                onChanged: (v) {
+                  ref.read(confirmActionsProvider.notifier).set(enabled: v);
+                  _autoSave();
+                },
               ),
             ],
           ),
@@ -398,25 +365,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           const SizedBox(height: 32),
 
           // ── Ações ──────────────────────────────────────────────────────────
-          FilledButton(
-            onPressed: _saving ? null : _save,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(56),
-            ),
-            child: _saving
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text('Salvar preferências'),
-          ),
-          const SizedBox(height: 12),
           OutlinedButton(
-            onPressed: _saving ? null : _restoreDefaults,
+            onPressed: _restoreDefaults,
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(56),
             ),
@@ -502,77 +452,68 @@ class _SpacingPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Lê o AppSpacing do tema — muda automaticamente quando spacingScaleProvider muda,
-    // porque o main.dart reconstrói o MaterialApp com o novo ThemeData.
     final spacing = theme.extension<AppSpacing>()!;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(spacing.md, spacing.md, spacing.md, 0),
-      child: Container(
-        padding: EdgeInsets.all(spacing.md),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Prévia',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+    return Semantics(
+      label: 'Prévia de espaçamento entre elementos',
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(spacing.md, spacing.md, spacing.md, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Prévia',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
               ),
+              SizedBox(height: spacing.sm),
+              _SpacingTaskCard(title: 'Reunião às 14h', spacing: spacing),
+              SizedBox(height: spacing.sm),
+              _SpacingTaskCard(title: 'Tomar remédio', spacing: spacing),
+              SizedBox(height: spacing.sm),
+              _SpacingTaskCard(title: 'Consulta médica', spacing: spacing),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SpacingTaskCard extends StatelessWidget {
+  const _SpacingTaskCard({required this.title, required this.spacing});
+
+  final String title;
+  final AppSpacing spacing;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: spacing.xs,
+          vertical: spacing.sm,
+        ),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 48,
+              height: 48,
+              child: Checkbox(value: false, onChanged: null),
             ),
-            SizedBox(height: spacing.sm),
-            Row(
-              children: [
-                Icon(
-                  Icons.notifications_outlined,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-                SizedBox(width: spacing.sm),
-                Expanded(
-                  child: Text(
-                    'Reunião às 14h',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: spacing.sm),
-            Row(
-              children: [
-                Icon(
-                  Icons.check_circle_outline,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-                SizedBox(width: spacing.sm),
-                Expanded(
-                  child: Text(
-                    'Tomar remédio',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: spacing.sm),
-            Row(
-              children: [
-                Icon(
-                  Icons.event_outlined,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-                SizedBox(width: spacing.sm),
-                Expanded(
-                  child: Text(
-                    'Consulta médica',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ),
-              ],
+            SizedBox(width: spacing.xs),
+            Expanded(child: Text(title, style: theme.textTheme.titleMedium)),
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: Icon(
+                Icons.delete_outline,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
             ),
           ],
         ),
@@ -593,30 +534,37 @@ class _TaskPreview extends StatelessWidget {
     final theme = Theme.of(context);
     final spacing = theme.extension<AppSpacing>()!;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        spacing.md,
-        spacing.sm,
-        spacing.md,
-        spacing.md,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            basicMode ? 'Prévia — Modo básico' : 'Prévia — Modo avançado',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
+    return Semantics(
+      label: basicMode
+          ? 'Prévia do modo básico de exibição'
+          : 'Prévia do modo avançado de exibição',
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            spacing.md,
+            spacing.sm,
+            spacing.md,
+            spacing.md,
           ),
-          SizedBox(height: spacing.sm),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: basicMode
-                ? const _BasicTaskCard()
-                : const _AdvancedTaskCard(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                basicMode ? 'Prévia — Modo básico' : 'Prévia — Modo avançado',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+              SizedBox(height: spacing.sm),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: basicMode
+                    ? const _BasicTaskCard()
+                    : const _AdvancedTaskCard(),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -628,23 +576,34 @@ class _BasicTaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.check_box_outline_blank,
-            color: theme.colorScheme.primary,
-            size: 24,
-          ),
-          const SizedBox(width: 12),
-          Text('Consulta médica', style: theme.textTheme.bodyLarge),
-        ],
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 48,
+              height: 48,
+              child: Checkbox(value: false, onChanged: null),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                'Consulta médica',
+                style: theme.textTheme.titleMedium,
+              ),
+            ),
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: Icon(
+                Icons.delete_outline,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -656,116 +615,73 @@ class _AdvancedTaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border(
-          left: BorderSide(color: theme.colorScheme.error, width: 4),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.error.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  'ALTA',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.error,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.schedule,
-                size: 14,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Hoje às 14h',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(
-                Icons.check_box_outline_blank,
-                color: theme.colorScheme.primary,
-                size: 22,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Consulta médica',
-                  style: theme.textTheme.bodyLarge,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              const _ActionChip(label: 'Concluir', icon: Icons.check),
-              const SizedBox(width: 8),
-              const _ActionChip(label: 'Adiar', icon: Icons.schedule),
-              const Spacer(),
-              Icon(
-                Icons.more_horiz,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActionChip extends StatelessWidget {
-  const _ActionChip({required this.label, required this.icon});
-
-  final String label;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SizedBox(
-      height: 48,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: theme.colorScheme.outline.withValues(alpha: 0.4),
-          ),
-          borderRadius: BorderRadius.circular(20),
-        ),
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            ExcludeSemantics(
-              child: Icon(icon, size: 14, color: theme.colorScheme.primary),
+            const SizedBox(
+              width: 48,
+              height: 48,
+              child: Checkbox(value: false, onChanged: null),
             ),
             const SizedBox(width: 4),
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.primary,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Consulta médica', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.arrow_upward,
+                            size: 14,
+                            color: theme.colorScheme.error,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Alta',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.error,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.schedule,
+                            size: 14,
+                            color: theme.colorScheme.error,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Vence hoje',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.error,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: Icon(
+                Icons.delete_outline,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
               ),
             ),
           ],

@@ -116,22 +116,63 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
           ),
         ),
-        data: (_) => pendingTasks.isEmpty
-            ? _EmptyState(onCreatePressed: () => _showCreateDialog())
-            : ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-                itemCount: pendingTasks.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final task = pendingTasks[index];
-                  return _TaskCard(
+        data: (_) {
+          if (pendingTasks.isEmpty) {
+            return _EmptyState(onCreatePressed: () => _showCreateDialog());
+          }
+
+          // Modo básico: lista plana simples
+          if (basicMode) {
+            final overdue = pendingTasks
+                .where((t) => _getUrgency(t.dueDate) == _Urgency.overdue)
+                .toList();
+            final rest = pendingTasks
+                .where((t) => _getUrgency(t.dueDate) != _Urgency.overdue)
+                .toList();
+            final sorted = [...overdue, ...rest];
+
+            return ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+              itemCount: sorted.length + (overdue.isNotEmpty ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (overdue.isNotEmpty && index == 0) {
+                  return _OverdueWarning(count: overdue.length);
+                }
+                final task = sorted[overdue.isNotEmpty ? index - 1 : index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _TaskCard(
                     task: task,
                     basicMode: basicMode,
                     onToggle: () => _toggleTask(task),
                     onDelete: () => _deleteTask(task),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
+            );
+          }
+
+          // Modo avançado: lista com seções
+          final overdueTasks = pendingTasks
+              .where((t) => _getUrgency(t.dueDate) == _Urgency.overdue)
+              .toList();
+          final todayTasks = pendingTasks
+              .where((t) => _getUrgency(t.dueDate) == _Urgency.today)
+              .toList();
+          final otherTasks = pendingTasks.where((t) {
+            final u = _getUrgency(t.dueDate);
+            return u != _Urgency.overdue && u != _Urgency.today;
+          }).toList();
+
+          return _SectionedTaskList(
+            overdueTasks: overdueTasks,
+            todayTasks: todayTasks,
+            otherTasks: otherTasks,
+            basicMode: basicMode,
+            onToggle: _toggleTask,
+            onDelete: _deleteTask,
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton.extended(
         key: _fabKey,
@@ -415,6 +456,209 @@ class _TutorialStep extends StatelessWidget {
   }
 }
 
+// ---------- Aviso simples para modo básico ----------
+
+class _OverdueWarning extends StatelessWidget {
+  const _OverdueWarning({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final text =
+        'Você tem $count tarefa${count > 1 ? 's' : ''} atrasada${count > 1 ? 's' : ''}';
+
+    return Semantics(
+      liveRegion: true,
+      child: Card(
+        color: theme.colorScheme.errorContainer,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: theme.colorScheme.onErrorContainer,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  text,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onErrorContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------- Lista com seções ----------
+
+class _SectionedTaskList extends StatelessWidget {
+  const _SectionedTaskList({
+    required this.overdueTasks,
+    required this.todayTasks,
+    required this.otherTasks,
+    required this.basicMode,
+    required this.onToggle,
+    required this.onDelete,
+  });
+
+  final List<Task> overdueTasks;
+  final List<Task> todayTasks;
+  final List<Task> otherTasks;
+  final bool basicMode;
+  final Future<void> Function(Task) onToggle;
+  final Future<void> Function(Task) onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+      children: [
+        if (overdueTasks.isNotEmpty)
+          _TaskSection(
+            icon: Icons.warning_amber_rounded,
+            title: 'Atrasadas (${overdueTasks.length})',
+            type: _SectionType.overdue,
+            tasks: overdueTasks,
+            basicMode: basicMode,
+            onToggle: onToggle,
+            onDelete: onDelete,
+          ),
+        if (todayTasks.isNotEmpty)
+          _TaskSection(
+            icon: Icons.today,
+            title: 'Hoje (${todayTasks.length})',
+            type: _SectionType.today,
+            tasks: todayTasks,
+            basicMode: basicMode,
+            onToggle: onToggle,
+            onDelete: onDelete,
+          ),
+        if (otherTasks.isNotEmpty)
+          _TaskSection(
+            icon: Icons.checklist,
+            title: 'Próximas (${otherTasks.length})',
+            type: _SectionType.normal,
+            tasks: otherTasks,
+            basicMode: basicMode,
+            onToggle: onToggle,
+            onDelete: onDelete,
+          ),
+      ],
+    );
+  }
+}
+
+enum _SectionType { overdue, today, normal }
+
+class _TaskSection extends StatelessWidget {
+  const _TaskSection({
+    required this.icon,
+    required this.title,
+    required this.type,
+    required this.tasks,
+    required this.basicMode,
+    required this.onToggle,
+    required this.onDelete,
+  });
+
+  final IconData icon;
+  final String title;
+  final _SectionType type;
+  final List<Task> tasks;
+  final bool basicMode;
+  final Future<void> Function(Task) onToggle;
+  final Future<void> Function(Task) onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final (bgColor, fgColor, borderColor) = switch (type) {
+      _SectionType.overdue => (
+        theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+        theme.colorScheme.onErrorContainer,
+        theme.colorScheme.error,
+      ),
+      _SectionType.today => (
+        theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+        theme.colorScheme.onPrimaryContainer,
+        theme.colorScheme.primary,
+      ),
+      _SectionType.normal => (
+        Colors.transparent,
+        theme.colorScheme.onSurface,
+        Colors.transparent,
+      ),
+    };
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+          border: borderColor != Colors.transparent
+              ? Border.all(color: borderColor.withValues(alpha: 0.4))
+              : null,
+        ),
+        child: Padding(
+          padding: type != _SectionType.normal
+              ? const EdgeInsets.fromLTRB(12, 12, 12, 8)
+              : EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Cabeçalho da seção
+              Semantics(
+                header: true,
+                liveRegion: type == _SectionType.overdue,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Icon(icon, size: 20, color: fgColor),
+                      const SizedBox(width: 8),
+                      Text(
+                        title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: fgColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Cards das tarefas
+              ...tasks.map(
+                (task) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _TaskCard(
+                    task: task,
+                    basicMode: basicMode,
+                    onToggle: () => onToggle(task),
+                    onDelete: () => onDelete(task),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ---------- Estado vazio ----------
 
 class _EmptyState extends StatelessWidget {
@@ -493,6 +737,14 @@ class _TaskCard extends StatelessWidget {
       label: _buildSemanticLabel(urgency),
       child: Card(
         clipBehavior: Clip.antiAlias,
+        shape: basicMode && urgency == _Urgency.overdue
+            ? RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: theme.colorScheme.error.withValues(alpha: 0.4),
+                ),
+              )
+            : null,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           child: Row(
@@ -534,6 +786,17 @@ class _TaskCard extends StatelessWidget {
                         ],
                       ),
                     ],
+                    if (basicMode && urgency == _Urgency.overdue)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Atrasada',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.error,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
