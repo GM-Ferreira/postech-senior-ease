@@ -17,6 +17,12 @@ flutter run -d chrome --web-port 8080
 
 # Rodar no emulador Android
 flutter run -d emulator-5554
+
+# Rodar testes
+flutter test
+
+# Rodar testes com cobertura
+flutter test --coverage
 ```
 
 ## Configurar Firebase
