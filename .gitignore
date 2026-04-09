@@ -47,3 +47,4 @@ app.*.map.json
 # Firebase credentials (use firebase_options_template.dart as reference)
 lib/firebase_options.dart
 android/app/google-services.json
+.vercel
